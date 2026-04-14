@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>チーム出欠管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:sans-serif;background:#f0f2f5;font-size:14px}
+.wrap{max-width:480px;margin:0 auto;padding:8px 8px 80px}
+/* ヘッダー */
+.hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 4px 8px}
+.hdr-left{display:flex;align-items:center;gap:8px}
+.hdr-logo{width:36px;height:36px;border-radius:50%;object-fit:cover;display:none}
+.hdr-logo.show{display:block}
+.hdr-logo-emoji{font-size:28px;line-height:1}
+.hdr-title{font-size:16px;font-weight:bold}
+.hdr-right{font-size:12px;color:#666;display:flex;align-items:center;gap:6px}
+.hbtn{font-size:12px;padding:4px 10px;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer}
+/* タブ */
+.tabs{display:flex;gap:4px;background:#ddd;border-radius:12px;padding:4px;margin-bottom:12px}
+.tbtn{flex:1;padding:8px 4px;border:none;background:transparent;border-radius:8px;font-size:13px;color:#666;cursor:pointer}
+.tbtn.on{background:#fff;color:#111;font-weight:bold;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+/* カード */
+.card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+/* カレンダー */
+.cal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.cal-nav{width:34px;height:34px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:20px;cursor:pointer}
+.cal-ym{font-size:16px;font-weight:bold}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.dow{font-size:11px;color:#888;padding:4px 0}
+.cday{min-height:44px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 1px;border-radius:8px;cursor:pointer;font-size:13px}
+.cday.emp{pointer-events:none}
+.cday.tod .dnum{background:#378ADD;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.cday.sel{background:#ddeeff}
+.cday.sun{color:#c0392b}.cday.sat{color:#2471a3}
+.cdot{width:6px;height:6px;border-radius:50%;display:inline-block;margin:0 1px}
+.dot-b{background:#378ADD}.dot-r{background:#e91e63}
+/* イベントカード */
+.ecard{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);border-left:4px solid #378ADD}
+.ecard.sel{border-left-color:#2471a3;background:#f0f7ff}
+.emeta{font-size:11px;color:#888;margin-bottom:2px}
+.etitle{font-size:15px;font-weight:bold;margin-bottom:5px}
+.etype-badge{font-size:10px;padding:1px 7px;border-radius:5px;margin-right:5px;font-weight:bold}
+.et-practice{background:#e3f0fc;color:#1a5f9e}
+.et-game{background:#fce4ec;color:#880e4f}
+.et-other{background:#f3e5f5;color:#6a1b9a}
+.esum{font-size:12px;display:flex;gap:8px;flex-wrap:wrap}
+.duty-bar{margin-top:5px;font-size:11px;background:#fce4ec;color:#880e4f;display:inline-block;padding:2px 8px;border-radius:6px;font-weight:bold}
+/* 詳細 */
+.back{background:none;border:none;color:#378ADD;font-size:14px;cursor:pointer;padding:0 0 10px;display:block}
+.slbl{font-size:11px;font-weight:bold;color:#888;margin:12px 0 5px;letter-spacing:.05em}
+.mcard{background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.mcard.duty-hl{background:#fce4ec;border-left:4px solid #e91e63}
+.mtop{display:flex;align-items:center;gap:8px}
+.mname{font-size:14px;font-weight:bold;flex:1}
+.dbadge{font-size:10px;background:#e91e63;color:#fff;padding:1px 6px;border-radius:4px;margin-left:4px}
+.ntoggle{background:none;border:none;font-size:11px;color:#378ADD;cursor:pointer}
+.mnote{font-size:12px;color:#555;margin-top:6px;padding-top:6px;border-top:1px solid #eee;display:none}
+.mnote.open{display:block}
+.dutybox{background:#fce4ec;border-left:4px solid #e91e63;border-radius:10px;padding:10px 14px;margin-bottom:10px}
+.dutybox-t{font-size:11px;font-weight:bold;color:#880e4f;margin-bottom:3px}
+.dutybox-n{font-size:15px;font-weight:bold;color:#4a0030}
+/* ログイン */
+.login-box{background:#fff;border-radius:16px;padding:24px 20px;box-shadow:0 2px 8px rgba(0,0,0,.12);margin-top:12px}
+.login-ttl{font-size:16px;font-weight:bold;text-align:center;margin-bottom:14px}
+.nlist{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:240px;overflow-y:auto}
+.nitem{padding:10px 14px;border:1px solid #ddd;border-radius:8px;background:#f8f8f8;font-size:14px;cursor:pointer;text-align:left;width:100%}
+.nitem.on{background:#378ADD;color:#fff;border-color:#378ADD}
+.pinarea{margin-top:10px}
+.pinlbl{font-size:12px;color:#888;margin-bottom:5px}
+.pininp{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:20px;letter-spacing:8px;text-align:center}
+.loginbtn{width:100%;margin-top:10px;padding:12px;background:#378ADD;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer}
+.loginerr{color:#c62828;font-size:13px;text-align:center;margin-top:6px;min-height:18px}
+/* 入力 */
+.icard{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.ittl{font-size:15px;font-weight:bold;margin-bottom:3px}
+.imeta{font-size:12px;color:#888;margin-bottom:10px}
+.isec{margin-bottom:12px}
+.ilbl{font-size:12px;font-weight:bold;color:#444;margin-bottom:5px}
+.abtnrow{display:flex;gap:6px}
+.abtn{flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:#f8f8f8;font-size:17px;cursor:pointer;text-align:center}
+.abtn.ok{background:#e8f5e9;border-color:#4caf50;font-weight:bold}
+.abtn.ng{background:#ffebee;border-color:#ef5350;font-weight:bold}
+.abtn.my{background:#fff8e1;border-color:#ffb300;font-weight:bold}
+.ntarea{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-top:6px;font-family:sans-serif;resize:vertical}
+/* 管理 */
+.acard{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.acard h3{font-size:14px;font-weight:bold;margin-bottom:10px}
+.flbl{font-size:12px;color:#888;margin-bottom:3px;display:block;margin-top:6px}
+.finp{width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:8px;font-size:14px;background:#fff}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.addbtn{padding:9px 16px;background:#f0f0f0;border:1px solid #ccc;border-radius:8px;font-size:13px;cursor:pointer;font-weight:bold;margin-top:8px}
+.addbtn.primary{background:#378ADD;color:#fff;border-color:#378ADD}
+.cbrow{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.cblbl{display:flex;align-items:center;gap:3px;font-size:13px;cursor:pointer}
+.mli{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0}
+.mli:last-child{border-bottom:none}
+.mli-info{flex:1}
+.mli-btns{display:flex;gap:4px}
+.icobtn{background:none;border:1px solid #ddd;border-radius:6px;color:#555;cursor:pointer;font-size:12px;padding:3px 8px}
+.icobtn.del{color:#c62828;border-color:#f5c6c6}
+.carerow{background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.06);display:flex;align-items:center;gap:8px}
+.carename{flex:1;font-size:14px;font-weight:bold}
+.dtgl{padding:5px 12px;font-size:12px;border-radius:6px;border:1px solid #ccc;background:#f8f8f8;cursor:pointer;font-weight:bold}
+.dtgl.on{background:#e91e63;color:#fff;border-color:#e91e63}
+/* モーダル */
+.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+.modal-bg.hidden{display:none}
+.modal{background:#fff;border-radius:16px 16px 0 0;padding:20px 16px 40px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-ttl{font-size:16px;font-weight:bold;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1}
+.modal-btn{width:100%;padding:12px;background:#378ADD;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer;margin-top:10px}
+.modal-btn.del{background:#c62828}
+.modal-btn.gray{background:#888}
+/* PIN変更 */
+.pin-change-box{background:#f8f8f8;border-radius:10px;padding:12px;margin-top:12px}
+.pin-change-ttl{font-size:12px;font-weight:bold;color:#555;margin-bottom:8px}
+/* 共通 */
+.noev{text-align:center;padding:3rem 1rem;color:#aaa;font-size:14px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 22px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+.sep{height:1px;background:#f0f0f0;margin:10px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-left">
+      <img class="hdr-logo" id="hdr-logo-img">
+      <span class="hdr-logo-emoji" id="hdr-logo-emoji">&#9917;</span>
+      <span class="hdr-title" id="hdr-title-text">チーム出欠管理</span>
+    </div>
+    <div class="hdr-right">
+      <span id="hname">未ログイン</span>
+      <button class="hbtn" id="hbtn">ログイン</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tbtn on" id="tc">カレンダー</button>
+    <button class="tbtn" id="ti" style="display:none">入力</button>
+    <button class="tbtn" id="ta" style="display:none">管理</button>
+  </div>
+  <div id="sc"></div>
+  <div id="sd" style="display:none"></div>
+  <div id="si" style="display:none"></div>
+  <div id="sa" style="display:none"></div>
+  <div id="sl" style="display:none"></div>
+</div>
+<!-- モーダル -->
+<div class="modal-bg hidden" id="modal-bg">
+  <div class="modal" id="modal-body"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var DAYS=['日','月','火','水','木','金','土'];
+var TODAY=new Date();
+var CY=TODAY.getFullYear(),CM=TODAY.getMonth();
+var selEid=null,ME=null,selUid=null;
+
+var D={"appTitle": "1年生チーム 出欠管理", "appLogo": "", "users": [{"id": "ua", "name": "管理者", "role": "admin", "pin": "0000"}, {"id": "uc1", "name": "湊コーチ", "role": "coach", "mid": "mc1", "pin": "1001"}, {"id": "uc2", "name": "亀井コーチ", "role": "coach", "mid": "mc2", "pin": "1002"}, {"id": "uc3", "name": "津金コーチ", "role": "coach", "mid": "mc3", "pin": "1003"}, {"id": "uc4", "name": "佐々木コーチ", "role": "coach", "mid": "mc4", "pin": "1004"}, {"id": "uc5", "name": "石渡コーチ", "role": "coach", "mid": "mc5", "pin": "1005"}, {"id": "uc6", "name": "大塚コーチ", "role": "coach", "mid": "mc6", "pin": "1006"}, {"id": "uc7", "name": "小林コーチ", "role": "coach", "mid": "mc7", "pin": "1007"}, {"id": "uc8", "name": "渡辺コーチ", "role": "coach", "mid": "mc8", "pin": "1008"}, {"id": "up1", "name": "石渡家（りょう）", "role": "parent", "mid": "mp1", "pin": "2001"}, {"id": "up2", "name": "岩成家（けんせい）", "role": "parent", "mid": "mp2", "pin": "2002"}, {"id": "up3", "name": "太田家（うきょう）", "role": "parent", "mid": "mp3", "pin": "2003"}, {"id": "up4", "name": "大塚家（あつひと）", "role": "parent", "mid": "mp4", "pin": "2004"}, {"id": "up5", "name": "大西家（えいと）", "role": "parent", "mid": "mp5", "pin": "2005"}, {"id": "up6", "name": "河口家（なお）", "role": "parent", "mid": "mp6", "pin": "2006"}, {"id": "up7", "name": "小寺家（こうた）", "role": "parent", "mid": "mp7", "pin": "2007"}, {"id": "up8", "name": "小林家（りょうや）", "role": "parent", "mid": "mp8", "pin": "2008"}, {"id": "up9", "name": "佐藤家（ゆうお）", "role": "parent", "mid": "mp9", "pin": "2009"}, {"id": "up10", "name": "佐藤家（たいが）", "role": "parent", "mid": "mp10", "pin": "2010"}, {"id": "up11", "name": "角田家（かいり）", "role": "parent", "mid": "mp11", "pin": "2011"}, {"id": "up12", "name": "ちょう家（さとし）", "role": "parent", "mid": "mp12", "pin": "2012"}, {"id": "up13", "name": "中野家（そう）", "role": "parent", "mid": "mp13", "pin": "2013"}, {"id": "up14", "name": "渡辺家（えいたろう）", "role": "parent", "mid": "mp14", "pin": "2014"}], "members": [{"id": "mc1", "type": "coach", "name": "湊コーチ"}, {"id": "mc2", "type": "coach", "name": "亀井コーチ"}, {"id": "mc3", "type": "coach", "name": "津金コーチ"}, {"id": "mc4", "type": "coach", "name": "佐々木コーチ"}, {"id": "mc5", "type": "coach", "name": "石渡コーチ"}, {"id": "mc6", "type": "coach", "name": "大塚コーチ"}, {"id": "mc7", "type": "coach", "name": "小林コーチ"}, {"id": "mc8", "type": "coach", "name": "渡辺コーチ"}, {"id": "mp1", "type": "player", "name": "石渡 りょう", "parent": "石渡家（りょう）"}, {"id": "mp2", "type": "player", "name": "岩成 けんせい", "parent": "岩成家（けんせい）"}, {"id": "mp3", "type": "player", "name": "太田 うきょう", "parent": "太田家（うきょう）"}, {"id": "mp4", "type": "player", "name": "大塚 あつひと", "parent": "大塚家（あつひと）"}, {"id": "mp5", "type": "player", "name": "大西 えいと", "parent": "大西家（えいと）"}, {"id": "mp6", "type": "player", "name": "河口 なお", "parent": "河口家（なお）"}, {"id": "mp7", "type": "player", "name": "小寺 こうた", "parent": "小寺家（こうた）"}, {"id": "mp8", "type": "player", "name": "小林 りょうや", "parent": "小林家（りょうや）"}, {"id": "mp9", "type": "player", "name": "佐藤 ゆうお", "parent": "佐藤家（ゆうお）"}, {"id": "mp10", "type": "player", "name": "佐藤 たいが", "parent": "佐藤家（たいが）"}, {"id": "mp11", "type": "player", "name": "角田 かいり", "parent": "角田家（かいり）"}, {"id": "mp12", "type": "player", "name": "ちょう さとし", "parent": "ちょう家（さとし）"}, {"id": "mp13", "type": "player", "name": "中野 そう", "parent": "中野家（そう）"}, {"id": "mp14", "type": "player", "name": "渡辺 えいたろう", "parent": "渡辺家（えいたろう）"}], "events": [{"id": "e1", "date": "2026-04-04", "title": "練習", "type": "練習", "place": "校庭", "start": "13:45", "end": "15:00"}, {"id": "e2", "date": "2026-04-05", "title": "練習", "type": "練習", "place": "校庭", "start": "10:50", "end": "12:10"}, {"id": "e3", "date": "2026-04-11", "title": "練習", "type": "練習", "place": "校庭", "start": "14:00", "end": "15:30"}, {"id": "e4", "date": "2026-04-12", "title": "練習", "type": "練習", "place": "校庭全面", "start": "10:50", "end": "12:10"}, {"id": "e5", "date": "2026-04-12", "title": "雨天練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:30"}, {"id": "e6", "date": "2026-04-19", "title": "練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "10:00"}, {"id": "e7", "date": "2026-04-19", "title": "雨天練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:30"}, {"id": "e8", "date": "2026-04-25", "title": "練習", "type": "練習", "place": "校庭", "start": "14:00", "end": "15:30"}], "att": {"e1": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "小林家（りょうや）"}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "渡辺家（えいたろう）"}, "mp2": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}, "e2": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "佐藤家（ゆうお）"}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc2": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}, "e3": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp2": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp9": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp10": {"ans": "ok", "note": "", "care": "maybe", "duty": false, "pname": ""}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "中野家（そう）"}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}, "e4": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "石渡家（りょう）"}, "mp2": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp3": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "太田家（うきょう）"}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp6": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp9": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}, "e5": {"mp1": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp3": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp6": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp10": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mp12": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp14": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}, "e6": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp3": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "大塚家（あつひと）"}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp6": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp9": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp14": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc4": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}}, "e7": {"mp2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp3": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp6": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp10": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp12": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp14": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}}, "e8": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp9": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "佐藤家（たいが）"}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc2": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}}};
+
+function initEvents(){}
+
+function fmtD(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());}
+function p2(n){return n<10?'0'+n:''+n;}
+function fdsp(ds){var d=new Date(ds+'T00:00:00');return (d.getMonth()+1)+'月'+d.getDate()+'日('+DAYS[d.getDay()]+')'; }
+function esc(s){return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function getA(eid,mid){if(!D.att[eid])D.att[eid]={};if(!D.att[eid][mid])D.att[eid][mid]={ans:null,note:'',care:null,duty:false,pname:''};return D.att[eid][mid];}
+
+function save(){try{localStorage.setItem('sc7',JSON.stringify(D));}catch(e){}}
+function load(){
+  try{
+    var s=localStorage.getItem('sc7');
+    if(s){
+      var p=JSON.parse(s);
+      if(p.appTitle)D.appTitle=p.appTitle;
+      if(p.appLogo)D.appLogo=p.appLogo;
+      if(p.users)D.users=p.users;
+      if(p.members)D.members=p.members;
+      if(p.events)D.events=p.events;
+      if(p.att)D.att=p.att;
+    }
+  }catch(e){}
+}
+
+function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(function(){t.className='toast';},2200);}
+
+function updateHeader(){
+  document.getElementById('hdr-title-text').textContent=D.appTitle||'チーム出欠管理';
+  document.title=D.appTitle||'チーム出欠管理';
+  var img=document.getElementById('hdr-logo-img');
+  var emoji=document.getElementById('hdr-logo-emoji');
+  if(D.appLogo){img.src=D.appLogo;img.className='hdr-logo show';emoji.style.display='none';}
+  else{img.className='hdr-logo';emoji.style.display='';}
+}
+
+// ===== モーダル =====
+function openModal(html){
+  document.getElementById('modal-body').innerHTML=html;
+  document.getElementById('modal-bg').className='modal-bg';
+}
+function closeModal(){document.getElementById('modal-bg').className='modal-bg hidden';}
+document.getElementById('modal-bg').onclick=function(e){if(e.target===this)closeModal();};
+
+// ===== 画面切り替え =====
+function show(scr){
+  ['sc','sd','si','sa','sl'].forEach(function(id){document.getElementById(id).style.display='none';});
+  document.getElementById(scr).style.display='block';
+  document.getElementById('tc').className='tbtn'+(scr==='sc'||scr==='sd'?' on':'');
+  document.getElementById('ti').className='tbtn'+(scr==='si'?' on':'');
+  document.getElementById('ta').className='tbtn'+(scr==='sa'?' on':'');
+}
+function goCalendar(){show('sc');drawCal();}
+function goDetail(){show('sd');drawDetail();}
+function goInput(){show('si');drawInput();}
+function goAdmin(){show('sa');drawAdmin();}
+function goLogin(){show('sl');drawLogin();}
+
+document.getElementById('hbtn').onclick=function(){ME?doLogout():goLogin();};
+document.getElementById('tc').onclick=goCalendar;
+document.getElementById('ti').onclick=goInput;
+document.getElementById('ta').onclick=goAdmin;
+
+function doLogout(){
+  ME=null;
+  document.getElementById('hname').textContent='未ログイン';
+  document.getElementById('hbtn').textContent='ログイン';
+  document.getElementById('ti').style.display='none';
+  document.getElementById('ta').style.display='none';
+  goCalendar();showToast('ログアウトしました');
+}
+
+// ===== ログイン =====
+function drawLogin(){
+  var html='<div class="login-box"><div class="login-ttl">ログイン</div><div class="nlist">';
+  for(var i=0;i<D.users.length;i++){
+    var u=D.users[i];
+    html+='<button class="nitem" id="ni_'+u.id+'" data-uid="'+u.id+'">'+esc(u.name)+'</button>';
+  }
+  html+='</div><div class="pinarea" id="pinarea" style="display:none">';
+  html+='<div class="pinlbl">PINコードを入力（4桁）</div>';
+  html+='<input type="password" inputmode="numeric" maxlength="4" class="pininp" id="pinp">';
+  html+='<button class="loginbtn" id="loginbtn">ログイン</button>';
+  html+='<div class="loginerr" id="lerr"></div>';
+  html+='</div></div>';
+  document.getElementById('sl').innerHTML=html;
+  var btns=document.querySelectorAll('.nitem');
+  for(var j=0;j<btns.length;j++){
+    (function(btn){
+      btn.onclick=function(){
+        selUid=btn.getAttribute('data-uid');
+        for(var k=0;k<btns.length;k++)btns[k].className='nitem';
+        btn.className='nitem on';
+        document.getElementById('pinarea').style.display='block';
+        document.getElementById('pinp').value='';
+        document.getElementById('lerr').textContent='';
+        document.getElementById('pinp').focus();
+      };
+    })(btns[j]);
+  }
+  document.getElementById('loginbtn').onclick=function(){
+    var pin=document.getElementById('pinp').value;
+    var found=null;
+    for(var i=0;i<D.users.length;i++){if(D.users[i].id===selUid){found=D.users[i];break;}}
+    if(!found){document.getElementById('lerr').textContent='名前を選んでください';return;}
+    if(found.pin!==pin){document.getElementById('lerr').textContent='PINコードが違います';return;}
+    ME=found;
+    document.getElementById('hname').textContent=found.name;
+    document.getElementById('hbtn').textContent='ログアウト';
+    document.getElementById('ti').style.display='';
+    if(found.role==='admin')document.getElementById('ta').style.display='';
+    goCalendar();showToast('ようこそ、'+found.name+'さん');
+  };
+}
+
+// ===== カレンダー =====
+function changeMonth(d){CM+=d;if(CM>11){CM=0;CY++;}if(CM<0){CM=11;CY--;}drawCal();}
+
+function typeBadge(type){
+  if(!type||type==='練習')return '<span class="etype-badge et-practice">練習</span>';
+  if(type==='試合'||type==='練習試合')return '<span class="etype-badge et-game">'+esc(type)+'</span>';
+  return '<span class="etype-badge et-other">'+esc(type)+'</span>';
+}
+
+function drawCal(){
+  var months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  var todayStr=fmtD(TODAY);
+  var html='<div class="card"><div class="cal-hdr">';
+  html+='<button class="cal-nav" id="cal-prev">&#8249;</button>';
+  html+='<span class="cal-ym">'+CY+'年 '+months[CM]+'</span>';
+  html+='<button class="cal-nav" id="cal-next">&#8250;</button>';
+  html+='</div><div class="cal-grid">';
+  var dc=['color:#c0392b','','','','','','color:#2471a3'];
+  for(var i=0;i<7;i++)html+='<div class="dow" style="'+dc[i]+'">'+DAYS[i]+'</div>';
+  var first=new Date(CY,CM,1).getDay();
+  var last=new Date(CY,CM+1,0).getDate();
+  for(var i=0;i<first;i++)html+='<div class="cday emp"></div>';
+  for(var d=1;d<=last;d++){
+    var ds=CY+'-'+p2(CM+1)+'-'+p2(d);
+    var dow=new Date(ds+'T00:00:00').getDay();
+    var evs=D.events.filter(function(e){return e.date===ds;});
+    var isSel=evs.some(function(e){return e.id===selEid;});
+    var hasDuty=evs.some(function(ev){
+      var av=Object.values(D.att[ev.id]||{});
+      for(var i=0;i<av.length;i++)if(av[i].duty)return true;
+      return false;
+    });
+    var cls='cday'+(new Date(ds+'T00:00:00').toDateString()===TODAY.toDateString()?' tod':'')+(isSel?' sel':'')+(dow===0?' sun':dow===6?' sat':'');
+    html+='<div class="'+cls+'" data-ds="'+ds+'"><span class="dnum">'+d+'</span>';
+    if(evs.length)html+='<div><span class="cdot dot-b"></span>'+(hasDuty?'<span class="cdot dot-r"></span>':'')+'</div>';
+    html+='</div>';
+  }
+  html+='</div></div>';
+  // イベント一覧
+  var evList=[];
+  for(var i=0;i<D.events.length;i++){
+    var ed=new Date(D.events[i].date+'T00:00:00');
+    if(ed.getFullYear()===CY&&ed.getMonth()===CM)evList.push(D.events[i]);
+  }
+  evList.sort(function(a,b){return a.date<b.date?-1:1;});
+  if(!evList.length){html+='<div class="noev">この月の予定はありません</div>';}
+  else{
+    for(var i=0;i<evList.length;i++){
+      var ev=evList[i];
+      var att=D.att[ev.id]||{};
+      var ok=0,ng=0,my=0,no=0;
+      for(var j=0;j<D.members.length;j++){
+        var a=att[D.members[j].id];
+        if(!a||!a.ans)no++;else if(a.ans==='ok')ok++;else if(a.ans==='ng')ng++;else my++;
+      }
+      var duties=[];var av=Object.values(att);
+      for(var j=0;j<av.length;j++)if(av[j].duty&&av[j].pname)duties.push(av[j].pname);
+      html+='<div class="ecard'+(ev.id===selEid?' sel':'')+'" data-eid="'+ev.id+'">';
+      html+='<div class="emeta">'+fdsp(ev.date)+(ev.start?' '+ev.start:'')+(ev.end?' 〜 '+ev.end:'')+(ev.place?' | '+esc(ev.place):'')+'</div>';
+      html+='<div class="etitle">'+typeBadge(ev.type)+esc(ev.title)+'</div>';
+      html+='<div class="esum">';
+      if(ok)html+='<span style="color:#2e7d32"><b>○</b> '+ok+'名</span>';
+      if(my)html+='<span style="color:#f57f17"><b>△</b> '+my+'名</span>';
+      if(ng)html+='<span style="color:#c62828"><b>×</b> '+ng+'名</span>';
+      if(no)html+='<span style="color:#aaa">未入力 '+no+'名</span>';
+      html+='</div>';
+      if(duties.length)html+='<div><span class="duty-bar">当番: '+esc(duties.join('・'))+'</span></div>';
+      if(ME&&ME.role==='admin'){
+        html+='<div style="display:flex;gap:6px;margin-top:8px;border-top:1px solid #f0f0f0;padding-top:8px">';
+        html+='<button class="icobtn ev-edit-btn" data-eid="'+ev.id+'" style="font-size:12px;padding:4px 12px">編集</button>';
+        html+='<button class="icobtn del ev-del-btn" data-eid="'+ev.id+'" style="font-size:12px;padding:4px 12px">削除</button>';
+        html+='</div>';
+      }
+      html+='</div>';
+    }
+  }
+  document.getElementById('sc').innerHTML=html;
+  document.getElementById('cal-prev').onclick=function(){changeMonth(-1);};
+  document.getElementById('cal-next').onclick=function(){changeMonth(1);};
+  var cdays=document.querySelectorAll('.cday:not(.emp)');
+  for(var i=0;i<cdays.length;i++){
+    (function(el){
+      el.onclick=function(){
+        var ds=el.getAttribute('data-ds');
+        var found=null;
+        for(var j=0;j<D.events.length;j++)if(D.events[j].date===ds){found=D.events[j];break;}
+        if(found){selEid=found.id;drawCal();}
+      };
+    })(cdays[i]);
+  }
+  var ecards=document.querySelectorAll('.ecard');
+  for(var i=0;i<ecards.length;i++){
+    (function(el){
+      el.onclick=function(e){
+        if(e.target.classList.contains('ev-edit-btn')||e.target.classList.contains('ev-del-btn'))return;
+        selEid=el.getAttribute('data-eid');goDetail();
+      };
+    })(ecards[i]);
+  }
+  // イベント編集ボタン
+  var editEvBtns=document.querySelectorAll('.ev-edit-btn');
+  for(var i=0;i<editEvBtns.length;i++){
+    (function(btn){
+      btn.onclick=function(e){e.stopPropagation();openEvEditModal(btn.getAttribute('data-eid'));};
+    })(editEvBtns[i]);
+  }
+  // イベント削除ボタン
+  var delEvBtns=document.querySelectorAll('.ev-del-btn');
+  for(var i=0;i<delEvBtns.length;i++){
+    (function(btn){
+      btn.onclick=function(e){
+        e.stopPropagation();
+        var eid=btn.getAttribute('data-eid');
+        var ev=null;for(var j=0;j<D.events.length;j++)if(D.events[j].id===eid){ev=D.events[j];break;}
+        if(!ev)return;
+        if(!confirm(fdsp(ev.date)+' '+ev.title+' を削除しますか？'))return;
+        D.events=D.events.filter(function(e){return e.id!==eid;});
+        save();showToast('削除しました');drawCal();
+      };
+    })(delEvBtns[i]);
+  }
+}
+
+// ===== 詳細 =====
+function drawDetail(){
+  if(!selEid){goCalendar();return;}
+  var ev=null;for(var i=0;i<D.events.length;i++)if(D.events[i].id===selEid){ev=D.events[i];break;}
+  if(!ev){goCalendar();return;}
+  var att=D.att[ev.id]||{};
+  var duties=[];var av=Object.values(att);
+  for(var i=0;i<av.length;i++)if(av[i].duty&&av[i].pname)duties.push(av[i].pname);
+  var html='<button class="back" id="detback">&#8592; カレンダーに戻る</button>';
+  html+='<div class="card">';
+  html+='<div style="font-size:12px;color:#888;margin-bottom:4px">'+fdsp(ev.date)+(ev.start?' '+ev.start:'')+(ev.end?' 〜 '+ev.end:'')+'</div>';
+  html+='<div style="font-size:17px;font-weight:bold;margin-bottom:4px">'+typeBadge(ev.type)+esc(ev.title)+'</div>';
+  if(ev.place)html+='<div style="font-size:13px;color:#888">'+esc(ev.place)+'</div>';
+  html+='</div>';
+  if(duties.length)html+='<div class="dutybox"><div class="dutybox-t">看護当番</div><div class="dutybox-n">'+esc(duties.join('・'))+'</div></div>';
+  function mkrow(m){
+    var a=att[m.id]||{};var ans=a.ans||null;
+    if(ans==='ng')return '';
+    var mark=ans==='ok'?'<span style="color:#2e7d32;font-size:18px">○</span>':ans==='maybe'?'<span style="color:#f57f17;font-size:18px">△</span>':'<span style="color:#ccc;font-size:18px">—</span>';
+    var note=a.note||'';var isDuty=a.duty;
+    var r='<div class="mcard'+(isDuty?' duty-hl':'')+'"><div class="mtop">'+mark;
+    r+='<span class="mname">'+esc(m.name)+(isDuty?'<span class="dbadge">当番</span>':'')+'</span>';
+    if(note)r+='<button class="ntoggle">&#9656; 備考</button>';
+    r+='</div>'+(note?'<div class="mnote">'+esc(note)+'</div>':'')+'</div>';
+    return r;
+  }
+  var players=D.members.filter(function(m){return m.type==='player';});
+  var coaches=D.members.filter(function(m){return m.type==='coach';});
+  var ph=players.map(mkrow).join('');
+  var ch=coaches.map(mkrow).join('');
+  if(ph)html+='<div class="slbl">選手</div>'+ph;
+  if(ch)html+='<div class="slbl">コーチ</div>'+ch;
+  if(!ph&&!ch)html+='<div class="noev">まだ入力がありません</div>';
+  document.getElementById('sd').innerHTML=html;
+  document.getElementById('detback').onclick=goCalendar;
+  var nbtns=document.querySelectorAll('.ntoggle');
+  for(var i=0;i<nbtns.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        var note=btn.parentElement.nextElementSibling;
+        if(!note)return;
+        if(note.className.indexOf('open')>=0){note.className='mnote';btn.innerHTML='&#9656; 備考';}
+        else{note.className='mnote open';btn.innerHTML='&#9662; 備考';}
+      };
+    })(nbtns[i]);
+  }
+}
+
+// ===== 入力 =====
+function drawInput(){
+  var body=document.getElementById('si');
+  if(!ME){body.innerHTML='<div class="noev">ログインしてください</div>';return;}
+  if(ME.role==='admin'){body.innerHTML='<div class="noev">管理者は「管理」タブを使ってください</div>';return;}
+  var mid=ME.mid;
+  var member=null;for(var i=0;i<D.members.length;i++)if(D.members[i].id===mid){member=D.members[i];break;}
+  if(!member){body.innerHTML='<div class="noev">メンバー情報が見つかりません</div>';return;}
+  var now=new Date(TODAY);now.setDate(now.getDate()-1);
+  var evs=[];
+  for(var i=0;i<D.events.length;i++)if(new Date(D.events[i].date+'T00:00:00')>=now)evs.push(D.events[i]);
+  evs.sort(function(a,b){return a.date<b.date?-1:1;});
+  if(!evs.length){body.innerHTML='<div class="noev">入力できる予定がありません</div>';return;}
+  var isParent=ME.role==='parent';
+  // PIN変更セクション（末尾に追加）
+  var pinSec='<div class="card"><div style="font-weight:bold;margin-bottom:8px">PINコードの変更</div>';
+  pinSec+='<div class="flbl">現在のPIN</div><input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-cur" placeholder="••••">';
+  pinSec+='<div class="flbl">新しいPIN（4桁）</div><input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-new" placeholder="••••">';
+  pinSec+='<div class="flbl">新しいPIN（確認）</div><input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-new2" placeholder="••••">';
+  pinSec+='<button class="addbtn primary" id="pin-change-btn" style="width:100%;margin-top:8px">PINを変更する</button>';
+  pinSec+='<div style="color:#c62828;font-size:13px;min-height:18px;margin-top:4px" id="pin-err"></div></div>';
+  var html='';
+  for(var i=0;i<evs.length;i++){
+    var ev=evs[i];var a=getA(ev.id,mid);
+    html+='<div class="icard">';
+    html+='<div class="ittl">'+typeBadge(ev.type)+esc(ev.title)+'</div>';
+    html+='<div class="imeta">'+fdsp(ev.date)+(ev.start?' '+ev.start:'')+(ev.end?' 〜 '+ev.end:'')+(ev.place?' | '+esc(ev.place):'')+'</div>';
+    html+='<div class="isec"><div class="ilbl">'+esc(member.name)+'の出欠</div>';
+    html+='<div class="abtnrow">';
+    html+='<button class="abtn'+(a.ans==='ok'?' ok':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ok" data-t="ans">○</button>';
+    html+='<button class="abtn'+(a.ans==='ng'?' ng':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ng" data-t="ans">×</button>';
+    html+='<button class="abtn'+(a.ans==='maybe'?' my':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="maybe" data-t="ans">△</button>';
+    html+='</div>';
+    html+='<textarea class="ntarea" rows="2" placeholder="備考（任意）" data-eid="'+ev.id+'" data-mid="'+mid+'">'+esc(a.note||'')+'</textarea></div>';
+    if(isParent){
+      html+='<div class="isec"><div class="ilbl">看護当番の可否</div>';
+      html+='<div class="abtnrow">';
+      html+='<button class="abtn'+(a.care==='ok'?' ok':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ok" data-t="care">○</button>';
+      html+='<button class="abtn'+(a.care==='ng'?' ng':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ng" data-t="care">×</button>';
+      html+='<button class="abtn'+(a.care==='maybe'?' my':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="maybe" data-t="care">△</button>';
+      html+='</div></div>';
+    }
+    html+='</div>';
+  }
+  html+=pinSec;
+  body.innerHTML=html;
+  // PIN変更
+  document.getElementById('pin-change-btn').onclick=function(){
+    var cur=document.getElementById('pin-cur').value;
+    var nw=document.getElementById('pin-new').value;
+    var nw2=document.getElementById('pin-new2').value;
+    var errEl=document.getElementById('pin-err');
+    if(cur!==ME.pin){errEl.textContent='現在のPINが違います';return;}
+    if(!/^\d{4}$/.test(nw)){errEl.textContent='新しいPINは4桁の数字で入力してください';return;}
+    if(nw!==nw2){errEl.textContent='新しいPINが一致しません';return;}
+    for(var i=0;i<D.users.length;i++)if(D.users[i].id===ME.id){D.users[i].pin=nw;ME.pin=nw;break;}
+    save();errEl.textContent='';
+    document.getElementById('pin-cur').value='';document.getElementById('pin-new').value='';document.getElementById('pin-new2').value='';
+    showToast('PINを変更しました');
+  };
+  // ○×△
+  var abtns=body.querySelectorAll('.abtn');
+  for(var i=0;i<abtns.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        var eid=btn.getAttribute('data-eid');var mid2=btn.getAttribute('data-mid');
+        var val=btn.getAttribute('data-v');var type=btn.getAttribute('data-t');
+        var a2=getA(eid,mid2);
+        if(type==='ans')a2.ans=val;
+        else{
+          a2.care=val;
+          var m2=null;for(var j=0;j<D.members.length;j++)if(D.members[j].id===mid2){m2=D.members[j];break;}
+          if(m2)a2.pname=m2.parent||m2.name;
+        }
+        save();
+        var row=btn.parentElement;var siblings=row.querySelectorAll('.abtn');
+        for(var j=0;j<siblings.length;j++){
+          var v=siblings[j].getAttribute('data-v');
+          siblings[j].className='abtn'+(v===val?(val==='ok'?' ok':val==='ng'?' ng':' my'):'');
+        }
+        showToast('保存しました');
+      };
+    })(abtns[i]);
+  }
+  // 備考
+  var txts=body.querySelectorAll('.ntarea');
+  for(var i=0;i<txts.length;i++){
+    (function(tx){
+      tx.onchange=function(){getA(tx.getAttribute('data-eid'),tx.getAttribute('data-mid')).note=tx.value;save();};
+    })(txts[i]);
+  }
+}
+
+// ===== 管理 =====
+function drawAdmin(){
+  var body=document.getElementById('sa');
+  if(!ME||ME.role!=='admin'){body.innerHTML='<div class="noev">管理者のみアクセスできます</div>';return;}
+  var evsSorted=D.events.slice().sort(function(a,b){return a.date<b.date?-1:1;});
+  // アプリ設定
+  var html='<div class="acard"><h3>アプリ設定</h3>';
+  html+='<label class="flbl">タイトル</label>';
+  html+='<input type="text" class="finp" id="app-title-inp" value="'+esc(D.appTitle||'')+'" placeholder="チーム出欠管理">';
+  html+='<label class="flbl">ロゴ画像</label>';
+  html+='<input type="file" accept="image/*" id="logo-file" style="font-size:13px;margin-top:4px">';
+  if(D.appLogo)html+='<div style="margin-top:6px"><img src="'+D.appLogo+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover"> <button class="icobtn del" id="logo-del-btn">削除</button></div>';
+  html+='<button class="addbtn primary" id="app-save-btn" style="width:100%;margin-top:10px">設定を保存</button></div>';
+  // 当番選定
+  html+='<div class="acard"><h3>看護当番の選定</h3>';
+  if(evsSorted.length){
+    html+='<select class="finp" id="dsel">';
+    for(var i=0;i<evsSorted.length;i++)html+='<option value="'+evsSorted[i].id+'">'+fdsp(evsSorted[i].date)+' '+esc(evsSorted[i].title)+'</option>';
+    html+='</select><div id="dlist" style="margin-top:8px"></div>';
+  }else html+='<div style="color:#aaa;font-size:13px">予定がありません</div>';
+  html+='</div>';
+  // イベント追加
+  html+='<div class="acard"><h3>イベントを追加</h3>';
+  html+='<div class="g2"><div><label class="flbl">日付</label><input type="date" class="finp" id="nd"></div>';
+  html+='<div><label class="flbl">種別</label><input type="text" class="finp" id="ntype" placeholder="練習"></div></div>';
+  html+='<label class="flbl">タイトル</label><input type="text" class="finp" id="nt" placeholder="土曜練習" style="margin-bottom:6px">';
+  html+='<label class="flbl">場所</label><input type="text" class="finp" id="np" placeholder="〇〇公園" style="margin-bottom:6px">';
+  html+='<label class="flbl">時間</label><div class="g2"><input type="time" class="finp" id="ns"><input type="time" class="finp" id="ne"></div>';
+  html+='<button class="addbtn primary" id="addev-btn">追加する</button></div>';
+  // コピー追加
+  html+='<div class="acard"><h3>既存イベントをコピーして追加</h3>';
+  if(evsSorted.length){
+    html+='<label class="flbl">コピー元</label><select class="finp" id="copy-src">';
+    for(var i=0;i<evsSorted.length;i++)html+='<option value="'+evsSorted[i].id+'">'+fdsp(evsSorted[i].date)+' '+esc(evsSorted[i].title)+'</option>';
+    html+='</select>';
+    html+='<label class="flbl">追加する日付</label><input type="date" class="finp" id="copy-date" style="margin-bottom:6px">';
+    html+='<button class="addbtn primary" id="copy-btn">コピーして追加</button>';
+  }else html+='<div style="color:#aaa;font-size:13px">コピー元になるイベントがありません</div>';
+  html+='</div>';
+  // 一括追加
+  html+='<div class="acard"><h3>一括追加（繰り返し）</h3>';
+  html+='<label class="flbl">期間</label><div class="g2"><input type="date" class="finp" id="bs"><input type="date" class="finp" id="be"></div>';
+  html+='<label class="flbl">曜日</label><div class="cbrow">';
+  for(var i=0;i<DAYS.length;i++)html+='<label class="cblbl"><input type="checkbox" class="dcb" value="'+i+'"> '+DAYS[i]+'</label>';
+  html+='</div>';
+  html+='<div class="g2"><div><label class="flbl">種別</label><input type="text" class="finp" id="btype" placeholder="練習"></div>';
+  html+='<div><label class="flbl">タイトル</label><input type="text" class="finp" id="bt" placeholder="定期練習"></div></div>';
+  html+='<label class="flbl">時間</label><div class="g2"><input type="time" class="finp" id="bst"><input type="time" class="finp" id="ben"></div>';
+  html+='<button class="addbtn primary" id="bulk-btn">一括追加する</button></div>';
+  // メンバー管理
+  html+='<div class="acard"><h3>メンバー管理</h3>';
+  html+='<div class="g2"><div><label class="flbl">選手名</label><input type="text" class="finp" id="mnp" placeholder="山田 太郎"></div>';
+  html+='<div><label class="flbl">保護者名</label><input type="text" class="finp" id="mpp" placeholder="山田 お母さん"></div></div>';
+  html+='<label class="flbl">保護者PIN（4桁）</label><input type="text" class="finp" id="mpin" maxlength="4" placeholder="1234" style="margin-bottom:6px">';
+  html+='<button class="addbtn primary" id="add-player-btn">選手を追加</button>';
+  html+='<div class="sep"></div>';
+  html+='<label class="flbl">コーチ名</label>';
+  html+='<div style="display:flex;gap:6px"><input type="text" class="finp" id="mcn" placeholder="コーチ名" style="flex:1"><input type="text" class="finp" id="mcpin" maxlength="4" placeholder="PIN" style="width:70px"></div>';
+  html+='<button class="addbtn primary" id="add-coach-btn" style="margin-top:6px">コーチを追加</button>';
+  html+='<div id="mlist" style="margin-top:12px"></div></div>';
+  body.innerHTML=html;
+  // アプリ設定
+  document.getElementById('app-save-btn').onclick=function(){
+    var t=document.getElementById('app-title-inp').value.trim();
+    if(t)D.appTitle=t;
+    save();updateHeader();showToast('設定を保存しました');
+  };
+  var logoFile=document.getElementById('logo-file');
+  logoFile.onchange=function(){
+    var f=logoFile.files[0];if(!f)return;
+    var reader=new FileReader();
+    reader.onload=function(e){D.appLogo=e.target.result;save();updateHeader();showToast('ロゴを設定しました');drawAdmin();};
+    reader.readAsDataURL(f);
+  };
+  var logoDel=document.getElementById('logo-del-btn');
+  if(logoDel)logoDel.onclick=function(){D.appLogo='';save();updateHeader();showToast('ロゴを削除しました');drawAdmin();};
+  // 当番選定
+  var dsel=document.getElementById('dsel');
+  if(dsel){dsel.onchange=drawDuty;drawDuty();}
+  // イベント追加
+  document.getElementById('addev-btn').onclick=function(){
+    var d=document.getElementById('nd').value;
+    var t=document.getElementById('nt').value.trim();
+    if(!d||!t){showToast('日付とタイトルを入力してください');return;}
+    D.events.push({id:'e'+Date.now(),date:d,title:t,type:document.getElementById('ntype').value.trim()||'練習',place:document.getElementById('np').value.trim(),start:document.getElementById('ns').value,end:document.getElementById('ne').value});
+    save();showToast('追加しました');
+    document.getElementById('nd').value='';document.getElementById('nt').value='';document.getElementById('np').value='';document.getElementById('ntype').value='';
+    drawAdmin();
+  };
+  // コピー追加
+  var copyBtn=document.getElementById('copy-btn');
+  if(copyBtn){
+    copyBtn.onclick=function(){
+      var srcId=document.getElementById('copy-src').value;
+      var destDate=document.getElementById('copy-date').value;
+      if(!destDate){showToast('追加する日付を入力してください');return;}
+      var src=null;for(var i=0;i<D.events.length;i++)if(D.events[i].id===srcId){src=D.events[i];break;}
+      if(!src){showToast('コピー元が見つかりません');return;}
+      D.events.push({id:'e'+Date.now(),date:destDate,title:src.title,type:src.type||'練習',place:src.place,start:src.start,end:src.end});
+      save();showToast('コピーして追加しました');document.getElementById('copy-date').value='';drawAdmin();
+    };
+  }
+  // 一括追加
+  document.getElementById('bulk-btn').onclick=function(){
+    var s=document.getElementById('bs').value,e=document.getElementById('be').value;
+    var t=document.getElementById('bt').value.trim()||'練習';
+    var type=document.getElementById('btype').value.trim()||'練習';
+    var st=document.getElementById('bst').value,en=document.getElementById('ben').value;
+    var days=[];var cbs=document.querySelectorAll('.dcb:checked');
+    for(var i=0;i<cbs.length;i++)days.push(parseInt(cbs[i].value));
+    if(!s||!e||!days.length){showToast('期間と曜日を選択してください');return;}
+    var d2=new Date(s+'T00:00:00'),ed=new Date(e+'T00:00:00'),cnt=0;
+    while(d2<=ed){
+      if(days.indexOf(d2.getDay())>=0){D.events.push({id:'e'+Date.now()+cnt,date:fmtD(d2),title:t,type:type,place:'',start:st,end:en});cnt++;}
+      d2.setDate(d2.getDate()+1);
+    }
+    save();showToast(cnt+'件追加しました');drawAdmin();
+  };
+  // 選手追加
+  document.getElementById('add-player-btn').onclick=function(){
+    var name=document.getElementById('mnp').value.trim();
+    var par=document.getElementById('mpp').value.trim();
+    var pin=document.getElementById('mpin').value.trim()||'0000';
+    if(!name){showToast('選手名を入力してください');return;}
+    if(!/^\d{4}$/.test(pin)){showToast('PINは4桁の数字で入力してください');return;}
+    var mid2='m'+Date.now();
+    D.members.push({id:mid2,type:'player',name:name,parent:par});
+    D.users.push({id:'u'+Date.now(),name:(par||name)+'家',role:'parent',mid:mid2,pin:pin});
+    save();document.getElementById('mnp').value='';document.getElementById('mpp').value='';document.getElementById('mpin').value='';
+    drawMlist();showToast('追加しました');
+  };
+  // コーチ追加
+  document.getElementById('add-coach-btn').onclick=function(){
+    var name=document.getElementById('mcn').value.trim();
+    var pin=document.getElementById('mcpin').value.trim()||'0000';
+    if(!name){showToast('コーチ名を入力してください');return;}
+    if(!/^\d{4}$/.test(pin)){showToast('PINは4桁の数字で入力してください');return;}
+    var mid2='m'+Date.now();
+    D.members.push({id:mid2,type:'coach',name:name});
+    D.users.push({id:'u'+Date.now(),name:name+'（コーチ）',role:'coach',mid:mid2,pin:pin});
+    save();document.getElementById('mcn').value='';document.getElementById('mcpin').value='';
+    drawMlist();showToast('追加しました');
+  };
+  drawMlist();
+}
+
+function openEvEditModal(eid){
+  var ev=null;for(var i=0;i<D.events.length;i++)if(D.events[i].id===eid){ev=D.events[i];break;}
+  if(!ev)return;
+  var mhtml='<div class="modal-ttl">イベントを編集<button class="modal-close" onclick="closeModal()">&#215;</button></div>';
+  mhtml+='<div class="g2"><div><label class="flbl">日付</label><input type="date" class="finp" id="ev-edit-date" value="'+esc(ev.date)+'"></div>';
+  mhtml+='<div><label class="flbl">種別</label><input type="text" class="finp" id="ev-edit-type" value="'+esc(ev.type||'練習')+'" placeholder="練習"></div></div>';
+  mhtml+='<label class="flbl">タイトル</label><input type="text" class="finp" id="ev-edit-title" value="'+esc(ev.title)+'" style="margin-bottom:6px">';
+  mhtml+='<label class="flbl">場所</label><input type="text" class="finp" id="ev-edit-place" value="'+esc(ev.place||'')+'" style="margin-bottom:6px">';
+  mhtml+='<label class="flbl">時間</label><div class="g2"><input type="time" class="finp" id="ev-edit-start" value="'+esc(ev.start||'')+'"><input type="time" class="finp" id="ev-edit-end" value="'+esc(ev.end||'')+'"></div>';
+  mhtml+='<button class="modal-btn" id="ev-edit-save">保存する</button>';
+  mhtml+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>';
+  openModal(mhtml);
+  document.getElementById('ev-edit-save').onclick=function(){
+    var d=document.getElementById('ev-edit-date').value;
+    var t=document.getElementById('ev-edit-title').value.trim();
+    if(!d||!t){showToast('日付とタイトルを入力してください');return;}
+    ev.date=d;ev.title=t;
+    ev.type=document.getElementById('ev-edit-type').value.trim()||'練習';
+    ev.place=document.getElementById('ev-edit-place').value.trim();
+    ev.start=document.getElementById('ev-edit-start').value;
+    ev.end=document.getElementById('ev-edit-end').value;
+    save();closeModal();showToast('保存しました');drawCal();
+  };
+}
+
+function drawDuty(){
+  var dsel=document.getElementById('dsel');var dlist=document.getElementById('dlist');
+  if(!dsel||!dlist)return;
+  var eid=dsel.value;var att=D.att[eid]||{};
+  var duties=[];var av=Object.values(att);
+  for(var i=0;i<av.length;i++)if(av[i].duty&&av[i].pname)duties.push(av[i].pname);
+  var html='';
+  if(duties.length)html='<div class="dutybox" style="margin-bottom:8px"><div class="dutybox-t">当番</div><div class="dutybox-n">'+esc(duties.join('・'))+'</div></div>';
+  var players=D.members.filter(function(m){return m.type==='player';});
+  var anyShown=false;
+  for(var i=0;i<players.length;i++){
+    var m=players[i];var a=att[m.id]||{};
+    if(!a.care||a.care==='ng')continue;
+    anyShown=true;var isDuty=a.duty||false;
+    var mark=a.care==='ok'?'<span style="color:#2e7d32;font-size:16px">○</span>':'<span style="color:#f57f17;font-size:16px">△</span>';
+    html+='<div class="carerow">'+mark+'<span class="carename">'+esc(m.parent||m.name)+'<span style="font-size:11px;color:#888;margin-left:4px">（'+esc(m.name)+'）</span></span>';
+    html+='<button class="dtgl'+(isDuty?' on':'')+'" data-eid="'+eid+'" data-mid="'+m.id+'" data-pname="'+esc(m.parent||m.name)+'">'+(isDuty?'当番✓':'当番')+'</button></div>';
+  }
+  if(!anyShown)html+='<div style="color:#aaa;font-size:13px">○または△の保護者がいません</div>';
+  dlist.innerHTML=html;
+  var dtgls=dlist.querySelectorAll('.dtgl');
+  for(var i=0;i<dtgls.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        var eid2=btn.getAttribute('data-eid');var mid2=btn.getAttribute('data-mid');var pname=btn.getAttribute('data-pname');
+        var a2=getA(eid2,mid2);a2.duty=!a2.duty;a2.pname=pname;
+        save();drawDuty();
+      };
+    })(dtgls[i]);
+  }
+}
+
+function drawMlist(){
+  var el=document.getElementById('mlist');if(!el)return;
+  var players=D.members.filter(function(m){return m.type==='player';});
+  var coaches=D.members.filter(function(m){return m.type==='coach';});
+  var html='';
+  if(players.length){
+    html+='<div class="slbl">選手・保護者</div>';
+    for(var i=0;i<players.length;i++){
+      var m=players[i];
+      var u=null;for(var j=0;j<D.users.length;j++)if(D.users[j].mid===m.id){u=D.users[j];break;}
+      html+='<div class="mli"><div class="mli-info"><div style="font-weight:bold">'+esc(m.name)+'</div>';
+      if(m.parent)html+='<div style="font-size:11px;color:#888">保護者: '+esc(m.parent)+(u?' / PIN: '+u.pin:'')+'</div>';
+      html+='</div><div class="mli-btns">';
+      html+='<button class="icobtn edit-member-btn" data-mid="'+m.id+'">編集</button>';
+      html+='<button class="icobtn del reset-pin-btn" data-uid="'+(u?u.id:'')+'" data-uname="'+(u?esc(u.name):'')+'">PIN初期化</button>';
+      html+='<button class="icobtn del del-member-btn" data-mid="'+m.id+'">削除</button>';
+      html+='</div></div>';
+    }
+  }
+  if(coaches.length){
+    html+='<div class="slbl">コーチ</div>';
+    for(var i=0;i<coaches.length;i++){
+      var m=coaches[i];
+      var u=null;for(var j=0;j<D.users.length;j++)if(D.users[j].mid===m.id){u=D.users[j];break;}
+      html+='<div class="mli"><div class="mli-info"><div style="font-weight:bold">'+esc(m.name)+'</div>';
+      if(u)html+='<div style="font-size:11px;color:#888">PIN: '+u.pin+'</div>';
+      html+='</div><div class="mli-btns">';
+      html+='<button class="icobtn edit-member-btn" data-mid="'+m.id+'">編集</button>';
+      if(u)html+='<button class="icobtn del reset-pin-btn" data-uid="'+u.id+'" data-uname="'+esc(u.name)+'">PIN初期化</button>';
+      html+='<button class="icobtn del del-member-btn" data-mid="'+m.id+'">削除</button>';
+      html+='</div></div>';
+    }
+  }
+  el.innerHTML=html;
+  // 削除
+  var delBtns=el.querySelectorAll('.del-member-btn');
+  for(var i=0;i<delBtns.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        if(!confirm('削除しますか？'))return;
+        var mid2=btn.getAttribute('data-mid');
+        D.members=D.members.filter(function(m){return m.id!==mid2;});
+        D.users=D.users.filter(function(u){return u.mid!==mid2;});
+        save();drawMlist();showToast('削除しました');
+      };
+    })(delBtns[i]);
+  }
+  // PIN初期化
+  var resetBtns=el.querySelectorAll('.reset-pin-btn');
+  for(var i=0;i<resetBtns.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        var uid=btn.getAttribute('data-uid');var uname=btn.getAttribute('data-uname');
+        if(!uid)return;
+        openModal(
+          '<div class="modal-ttl">PIN初期化<button class="modal-close" onclick="closeModal()">&#215;</button></div>'+
+          '<div style="font-size:14px;margin-bottom:10px">'+esc(uname)+'のPINを初期化します。<br>新しいPINを入力してください。</div>'+
+          '<input type="text" inputmode="numeric" maxlength="4" class="finp" id="reset-pin-inp" placeholder="0000" style="font-size:20px;letter-spacing:6px;text-align:center">'+
+          '<div style="color:#c62828;font-size:13px;min-height:16px;margin-top:4px" id="reset-err"></div>'+
+          '<button class="modal-btn" id="reset-pin-confirm">初期化する</button>'+
+          '<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>'
+        );
+        document.getElementById('reset-pin-confirm').onclick=function(){
+          var newpin=document.getElementById('reset-pin-inp').value;
+          if(!/^\d{4}$/.test(newpin)){document.getElementById('reset-err').textContent='4桁の数字を入力してください';return;}
+          for(var j=0;j<D.users.length;j++)if(D.users[j].id===uid){D.users[j].pin=newpin;break;}
+          save();closeModal();drawMlist();showToast('PINを初期化しました');
+        };
+      };
+    })(resetBtns[i]);
+  }
+  // 編集
+  var editBtns=el.querySelectorAll('.edit-member-btn');
+  for(var i=0;i<editBtns.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        var mid2=btn.getAttribute('data-mid');
+        var m=null;for(var j=0;j<D.members.length;j++)if(D.members[j].id===mid2){m=D.members[j];break;}
+        if(!m)return;
+        var u=null;for(var j=0;j<D.users.length;j++)if(D.users[j].mid===mid2){u=D.users[j];break;}
+        var isPlayer=m.type==='player';
+        var mhtml='<div class="modal-ttl">メンバー編集<button class="modal-close" onclick="closeModal()">&#215;</button></div>';
+        mhtml+='<label class="flbl">'+(isPlayer?'選手名':'コーチ名')+'</label>';
+        mhtml+='<input type="text" class="finp" id="edit-name" value="'+esc(m.name)+'" style="margin-bottom:6px">';
+        if(isPlayer){
+          mhtml+='<label class="flbl">保護者名</label>';
+          mhtml+='<input type="text" class="finp" id="edit-parent" value="'+esc(m.parent||'')+'" placeholder="山田 お母さん" style="margin-bottom:6px">';
+          if(u){
+            mhtml+='<label class="flbl">ログイン表示名</label>';
+            mhtml+='<input type="text" class="finp" id="edit-uname" value="'+esc(u.name)+'" style="margin-bottom:6px">';
+          }
+        }
+        mhtml+='<button class="modal-btn" id="edit-save-btn">保存する</button>';
+        mhtml+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>';
+        openModal(mhtml);
+        document.getElementById('edit-save-btn').onclick=function(){
+          var newName=document.getElementById('edit-name').value.trim();
+          if(!newName){showToast('名前を入力してください');return;}
+          m.name=newName;
+          if(isPlayer){
+            var newParent=document.getElementById('edit-parent').value.trim();
+            m.parent=newParent;
+            if(u){
+              var newUname=document.getElementById('edit-uname').value.trim();
+              if(newUname)u.name=newUname;
+            }
+          }
+          save();closeModal();drawMlist();showToast('保存しました');
+        };
+      };
+    })(editBtns[i]);
+  }
+}
+
+// ===== 起動 =====
+initEvents();
+load();
+updateHeader();
+goCalendar();
+</script>
+</body>
+</html>
