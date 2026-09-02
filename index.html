@@ -177,6 +177,7 @@ function initEvents(){}
 
 function fmtD(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());}
 function p2(n){return n<10?'0'+n:''+n;}
+function fdspY(ds){var d=new Date(ds+'T00:00:00');return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';}
 function fdsp(ds){var d=new Date(ds+'T00:00:00');return (d.getMonth()+1)+'月'+d.getDate()+'日('+DAYS[d.getDay()]+')'; }
 function esc(s){return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function peekA(eid,mid){var e=D.att[eid];return (e&&e[mid])?e[mid]:{ans:null,note:'',care:null,duty:false};}
@@ -852,29 +853,52 @@ function openGcalModal(){
   m+='<input type="text" class="finp" id="gc-id" value="'+esc(c.calId)+'" placeholder="xxx@gmail.com" style="margin-bottom:6px">';
   m+='<label class="flbl">APIキー</label>';
   m+='<input type="text" class="finp" id="gc-key" value="'+esc(c.apiKey)+'" placeholder="AIza..." style="margin-bottom:6px">';
-  m+='<div class="g2"><div><label class="flbl">絞り込み語（カンマ区切り）</label><input type="text" class="finp" id="gc-kw" value="'+esc(c.kw)+'" placeholder="2年"></div>';
-  m+='<div><label class="flbl">先何ヶ月</label><input type="number" min="1" max="12" class="finp" id="gc-mo" value="'+c.months+'"></div></div>';
-  m+='<button class="modal-btn" id="gc-fetch" style="margin-top:10px">カレンダーを読み込む</button>';
+  m+='<label class="flbl">取り込む期間</label>';
+  m+='<div class="g2"><input type="date" class="finp" id="gc-from" value="'+gcalDefFrom()+'"><input type="date" class="finp" id="gc-to" value="'+gcalDefTo()+'"></div>';
+  m+='<div style="display:flex;gap:6px;margin-bottom:8px">';
+  m+='<button class="addbtn gc-preset" data-m="1" style="margin:0;font-size:12px;padding:5px 10px">1ヶ月</button>';
+  m+='<button class="addbtn gc-preset" data-m="3" style="margin:0;font-size:12px;padding:5px 10px">3ヶ月</button>';
+  m+='<button class="addbtn gc-preset" data-m="6" style="margin:0;font-size:12px;padding:5px 10px">6ヶ月</button>';
+  m+='<button class="addbtn gc-preset" data-m="12" style="margin:0;font-size:12px;padding:5px 10px">1年</button></div>';
+  m+='<label class="flbl">絞り込み語（カンマ区切り／空欄なら全件チェック）</label>';
+  m+='<input type="text" class="finp" id="gc-kw" value="'+esc(c.kw)+'" placeholder="2年" style="margin-bottom:6px">';
+  m+='<button class="modal-btn" id="gc-fetch" style="margin-top:4px">カレンダーを読み込む</button>';
   m+='<div id="gc-msg" style="font-size:13px;margin-top:8px;min-height:18px"></div>';
   m+='<div id="gc-list"></div>';
   m+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">閉じる</button>';
   openModal(m);
   document.getElementById('gc-fetch').onclick=gcalFetch;
+  var ps=document.querySelectorAll('.gc-preset');
+  for(var i=0;i<ps.length;i++){
+    (function(b){
+      b.onclick=function(){
+        var mo=parseInt(b.getAttribute('data-m'),10);
+        var f=new Date(TODAY), t=new Date(TODAY);
+        t.setMonth(t.getMonth()+mo);
+        document.getElementById('gc-from').value=fmtD(f);
+        document.getElementById('gc-to').value=fmtD(t);
+      };
+    })(ps[i]);
+  }
 }
+function gcalDefFrom(){ return fmtD(TODAY); }
+function gcalDefTo(){ var d=new Date(TODAY); d.setMonth(d.getMonth()+3); return fmtD(d); }
 
 function gcalFetch(){
   var c=gcalCfg();
   c.calId=document.getElementById('gc-id').value.trim();
   c.apiKey=document.getElementById('gc-key').value.trim();
   c.kw=document.getElementById('gc-kw').value.trim();
-  var mo=parseInt(document.getElementById('gc-mo').value,10); if(!isNaN(mo)&&mo>0)c.months=mo;
   save();
   var msg=document.getElementById('gc-msg');
   if(!c.calId||!c.apiKey){msg.style.color='#c62828';msg.textContent='カレンダーIDとAPIキーを入力してください';return;}
+  var from=document.getElementById('gc-from').value, to=document.getElementById('gc-to').value;
+  if(!from||!to){msg.style.color='#c62828';msg.textContent='取り込む期間を指定してください';return;}
+  if(from>to){msg.style.color='#c62828';msg.textContent='期間の開始日が終了日より後になっています';return;}
   msg.style.color='#888';msg.textContent='読み込み中...';
   document.getElementById('gc-list').innerHTML='';
-  var tmin=new Date(TODAY); tmin.setDate(tmin.getDate()-7);
-  var tmax=new Date(TODAY); tmax.setMonth(tmax.getMonth()+c.months);
+  var tmin=new Date(from+'T00:00:00');
+  var tmax=new Date(to+'T23:59:59');
   var url='https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(c.calId)+'/events'
     +'?key='+encodeURIComponent(c.apiKey)
     +'&timeMin='+tmin.toISOString()
@@ -885,8 +909,8 @@ function gcalFetch(){
     return r.json();
   }).then(function(j){
     gcalItems=(j.items||[]).map(gcalConv).filter(function(x){return !!x;});
-    if(!gcalItems.length){msg.style.color='#888';msg.textContent='予定が見つかりませんでした';return;}
-    msg.style.color='#2e7d32';msg.textContent=gcalItems.length+'件見つかりました。取り込むものを選んでください。';
+    if(!gcalItems.length){msg.style.color='#888';msg.textContent=fdspY(from)+'〜'+fdspY(to)+' に予定が見つかりませんでした';return;}
+    msg.style.color='#2e7d32';msg.textContent=fdspY(from)+'〜'+fdspY(to)+' で'+gcalItems.length+'件見つかりました。取り込むものを選んでください。';
     gcalRender();
   }).catch(function(e){
     msg.style.color='#c62828';
@@ -923,7 +947,8 @@ function gcalRender(){
     var chk=gcalMatch(x.title)&&!dup;
     s+='<div class="gcal-row"><input type="checkbox" class="gcal-cb" data-i="'+i+'"'+(chk?' checked':'')+'>';
     s+='<div class="gcal-info"><div class="gcal-ttl">'+esc(x.title)+(dup?'<span class="gcal-dup">取込済</span>':'')+'</div>';
-    s+='<div class="gcal-meta">'+fdsp(x.date)+(x.start?' '+x.start:'')+(x.end?'〜'+x.end:'')+(x.place?' | '+esc(x.place):'')+'</div></div></div>';
+    var sameYear=(new Date(x.date+'T00:00:00')).getFullYear()===TODAY.getFullYear();
+    s+='<div class="gcal-meta">'+(sameYear?fdsp(x.date):fdspY(x.date))+(x.start?' '+x.start:'')+(x.end?'〜'+x.end:'')+(x.place?' | '+esc(x.place):'')+'</div></div></div>';
   }
   s+='<button class="modal-btn" id="gc-import" style="margin-top:10px">選んだ予定を取り込む</button>';
   el.innerHTML=s;
