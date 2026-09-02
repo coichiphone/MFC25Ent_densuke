@@ -661,6 +661,15 @@ function drawAdmin(){
     html+='</select><div id="dlist" style="margin-top:8px"></div>';
   }else html+='<div style="color:#aaa;font-size:13px">予定がありません</div>';
   html+='</div>';
+  // 入力期限をまとめて設定
+  html+='<div class="acard"><h3>入力期限をまとめて設定</h3>';
+  html+='<div style="font-size:12px;color:#888;margin-bottom:8px">「◯日までに入力」と案内した日を、対象期間の予定にまとめて設定します。</div>';
+  html+='<label class="flbl">対象の予定（開催日で絞る）</label>';
+  html+='<div class="g2"><input type="date" class="finp" id="mdl-from" value="'+fmtD(TODAY)+'"><input type="date" class="finp" id="mdl-to" value="'+dlDefTo()+'"></div>';
+  html+='<label class="flbl">入力期限</label><input type="date" class="finp" id="mdl-date">';
+  html+='<div id="mdl-info" style="font-size:12px;color:#888;margin-top:8px"></div>';
+  html+='<div style="display:flex;gap:6px"><button class="addbtn primary" id="mdl-apply">まとめて設定</button>';
+  html+='<button class="addbtn" id="mdl-clear">期限を自動に戻す</button></div></div>';
   // Googleカレンダー取り込み
   html+='<div class="acard"><h3>Googleカレンダーから取り込み</h3>';
   html+='<div style="font-size:12px;color:#888;margin-bottom:8px">松丘FCの公開カレンダーを読み込んで、必要な予定だけ選んで登録します。</div>';
@@ -693,8 +702,8 @@ function drawAdmin(){
   html+='<div class="g2"><div><label class="flbl">種別</label><input type="text" class="finp" id="btype" placeholder="練習"></div>';
   html+='<div><label class="flbl">タイトル</label><input type="text" class="finp" id="bt" placeholder="定期練習"></div></div>';
   html+='<label class="flbl">時間</label><div class="g2"><input type="time" class="finp" id="bst"><input type="time" class="finp" id="ben"></div>';
-  html+='<button class="addbtn primary" id="bulk-btn">一括追加する</button>';
-  html+='<div style="font-size:11px;color:#aaa;margin-top:6px">入力期限は開催の'+dlDays()+'日前になります</div></div>';
+  html+='<label class="flbl">入力期限（空欄なら開催の'+dlDays()+'日前）</label><input type="date" class="finp" id="bdl">';
+  html+='<button class="addbtn primary" id="bulk-btn">一括追加する</button></div>';
   // メンバー管理
   html+='<div class="acard"><h3>メンバー管理</h3>';
   html+='<div class="g2"><div><label class="flbl">選手名</label><input type="text" class="finp" id="mnp" placeholder="山田 太郎"></div>';
@@ -707,6 +716,40 @@ function drawAdmin(){
   html+='<button class="addbtn primary" id="add-coach-btn" style="margin-top:6px">コーチを追加</button>';
   html+='<div id="mlist" style="margin-top:12px"></div></div>';
   body.innerHTML=html;
+  // 入力期限まとめ設定
+  function mdlTargets(){
+    var f=document.getElementById('mdl-from').value, t=document.getElementById('mdl-to').value;
+    if(!f||!t)return null;
+    if(f>t)return 'ERR';
+    return D.events.filter(function(e){return e.date>=f&&e.date<=t;});
+  }
+  function mdlRefresh(){
+    var el=document.getElementById('mdl-info');
+    var tg=mdlTargets();
+    if(tg==='ERR'){el.style.color='#c62828';el.textContent='開始日が終了日より後になっています';return;}
+    if(!tg){el.style.color='#888';el.textContent='対象期間を指定してください';return;}
+    el.style.color='#888';
+    el.textContent='対象: '+tg.length+'件'+(tg.length?'（'+fdsp(tg[0].date)+' 〜 '+fdsp(tg[tg.length-1].date)+'）':'');
+  }
+  ['mdl-from','mdl-to'].forEach(function(id){document.getElementById(id).onchange=mdlRefresh;});
+  mdlRefresh();
+  document.getElementById('mdl-apply').onclick=function(){
+    var tg=mdlTargets();
+    if(tg==='ERR'||!tg){showToast('対象期間を確認してください');return;}
+    if(!tg.length){showToast('対象の予定がありません');return;}
+    var dv=document.getElementById('mdl-date').value;
+    if(!dv){showToast('入力期限を指定してください');return;}
+    if(!confirm(tg.length+'件の入力期限を '+fdsp(dv)+' に設定します。よろしいですか？'))return;
+    for(var i=0;i<tg.length;i++)tg[i].dl=dv;
+    save();showToast(tg.length+'件に期限を設定しました');drawAdmin();drawCal();
+  };
+  document.getElementById('mdl-clear').onclick=function(){
+    var tg=mdlTargets();
+    if(tg==='ERR'||!tg||!tg.length){showToast('対象の予定がありません');return;}
+    if(!confirm(tg.length+'件の期限を自動（開催の'+dlDays()+'日前）に戻します。よろしいですか？'))return;
+    for(var i=0;i<tg.length;i++)tg[i].dl='';
+    save();showToast(tg.length+'件を自動に戻しました');drawAdmin();drawCal();
+  };
   document.getElementById('gcal-open').onclick=openGcalModal;
   // 当番選定
   var dsel=document.getElementById('dsel');
@@ -740,12 +783,13 @@ function drawAdmin(){
     var t=document.getElementById('bt').value.trim()||'練習';
     var type=document.getElementById('btype').value.trim()||'練習';
     var st=document.getElementById('bst').value,en=document.getElementById('ben').value;
+    var bdlv=document.getElementById('bdl').value||'';
     var days=[];var cbs=document.querySelectorAll('.dcb:checked');
     for(var i=0;i<cbs.length;i++)days.push(parseInt(cbs[i].value));
     if(!s||!e||!days.length){showToast('期間と曜日を選択してください');return;}
     var d2=new Date(s+'T00:00:00'),ed=new Date(e+'T00:00:00'),cnt=0;
     while(d2<=ed){
-      if(days.indexOf(d2.getDay())>=0){D.events.push({id:'e'+Date.now()+cnt,date:fmtD(d2),title:t,type:type,place:'',start:st,end:en});cnt++;}
+      if(days.indexOf(d2.getDay())>=0){D.events.push({id:'e'+Date.now()+cnt,date:fmtD(d2),title:t,type:type,place:'',start:st,end:en,dl:bdlv});cnt++;}
       d2.setDate(d2.getDate()+1);
     }
     save();showToast(cnt+'件追加しました');drawAdmin();
@@ -862,6 +906,8 @@ function openGcalModal(){
   m+='<button class="addbtn gc-preset" data-m="12" style="margin:0;font-size:12px;padding:5px 10px">1年</button></div>';
   m+='<label class="flbl">絞り込み語（カンマ区切り／空欄なら全件チェック）</label>';
   m+='<input type="text" class="finp" id="gc-kw" value="'+esc(c.kw)+'" placeholder="2年" style="margin-bottom:6px">';
+  m+='<label class="flbl">入力期限（取り込む予定すべてに設定／空欄なら自動）</label>';
+  m+='<input type="date" class="finp" id="gc-dl" style="margin-bottom:6px">';
   m+='<button class="modal-btn" id="gc-fetch" style="margin-top:4px">カレンダーを読み込む</button>';
   m+='<div id="gc-msg" style="font-size:13px;margin-top:8px;min-height:18px"></div>';
   m+='<div id="gc-list"></div>';
@@ -881,6 +927,7 @@ function openGcalModal(){
     })(ps[i]);
   }
 }
+function dlDefTo(){var d=new Date(TODAY);d.setMonth(d.getMonth()+3);return fmtD(d);}
 function gcalDefFrom(){ return fmtD(TODAY); }
 function gcalDefTo(){ var d=new Date(TODAY); d.setMonth(d.getMonth()+3); return fmtD(d); }
 
@@ -960,20 +1007,24 @@ function gcalRender(){
 function gcalImport(){
   var cbs=document.querySelectorAll('.gcal-cb:checked');
   if(!cbs.length){showToast('取り込む予定を選んでください');return;}
+  var gdlEl=document.getElementById('gc-dl');
+  var gdl=gdlEl?gdlEl.value:'';
   var add=0,upd=0;
   for(var i=0;i<cbs.length;i++){
     var x=gcalItems[parseInt(cbs[i].getAttribute('data-i'),10)];
     var ex=null;
     for(var j=0;j<D.events.length;j++)if(D.events[j].gid===x.gid){ex=D.events[j];break;}
     if(ex){
-      ex.date=x.date;ex.title=x.title;ex.type=x.type;ex.place=x.place;ex.start=x.start;ex.end=x.end;upd++;
+      ex.date=x.date;ex.title=x.title;ex.type=x.type;ex.place=x.place;ex.start=x.start;ex.end=x.end;
+      if(gdl)ex.dl=gdl;
+      upd++;
     }else{
-      D.events.push({id:'g'+Date.now()+'_'+i,gid:x.gid,date:x.date,title:x.title,type:x.type,place:x.place,start:x.start,end:x.end,dl:''});
+      D.events.push({id:'g'+Date.now()+'_'+i,gid:x.gid,date:x.date,title:x.title,type:x.type,place:x.place,start:x.start,end:x.end,dl:gdl});
       add++;
     }
   }
   save();closeModal();
-  showToast('新規'+add+'件 / 更新'+upd+'件を取り込みました');
+  showToast('新規'+add+'件 / 更新'+upd+'件を取り込みました'+(gdl?'（期限 '+fdsp(gdl)+'）':''));
   var d=new Date(TODAY);CY=d.getFullYear();CM=d.getMonth();
   drawAdmin();drawCal();
 }
