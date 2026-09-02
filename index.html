@@ -117,6 +117,18 @@ body{font-family:sans-serif;background:#f0f2f5;font-size:14px}
 .pin-change-box{background:#f8f8f8;border-radius:10px;padding:12px;margin-top:12px}
 .pin-change-ttl{font-size:12px;font-weight:bold;color:#555;margin-bottom:8px}
 /* 共通 */
+.remind{background:#FFF4E5;border:1px solid #FFCC80;border-left:4px solid #EF6C00;border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.remind-t{font-size:13px;font-weight:bold;color:#994800;margin-bottom:6px}
+.remind-r{font-size:13px;color:#5D3200;padding:2px 0}
+.remind-m{font-size:11px;background:#FFE0B2;color:#994800;padding:1px 6px;border-radius:4px;margin-left:4px}
+.remind-b{margin-top:8px;padding:8px 18px;background:#EF6C00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:bold;cursor:pointer}
+.gcal-row{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-bottom:1px solid #f0f0f0}
+.gcal-row:last-child{border-bottom:none}
+.gcal-cb{margin-top:3px;width:18px;height:18px;flex-shrink:0}
+.gcal-info{flex:1;min-width:0}
+.gcal-ttl{font-size:13px;font-weight:bold}
+.gcal-meta{font-size:11px;color:#888;margin-top:1px}
+.gcal-dup{font-size:10px;background:#E3F2FD;color:#1565C0;padding:1px 6px;border-radius:4px;margin-left:4px}
 .noev{text-align:center;padding:3rem 1rem;color:#aaa;font-size:14px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 22px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
@@ -133,6 +145,7 @@ body{font-family:sans-serif;background:#f0f2f5;font-size:14px}
     </div>
     <div class="hdr-right">
       <span id="hname">未ログイン</span>
+      <button class="hbtn" id="hset" style="display:none">&#9881;</button>
       <button class="hbtn" id="hbtn">ログイン</button>
     </div>
   </div>
@@ -157,22 +170,22 @@ body{font-family:sans-serif;background:#f0f2f5;font-size:14px}
 var DAYS=['日','月','火','水','木','金','土'];
 var TODAY=new Date();
 var CY=TODAY.getFullYear(),CM=TODAY.getMonth();
-var selEid=null,ME=null,selUid=null;
+var selEid=null,selDate=null,ME=null,selUid=null,showPast=false,dutyEid=null;
 
-var D={"appTitle": "1年生チーム 出欠管理", "appLogo": "", "users": [{"id": "ua", "name": "管理者", "role": "admin", "pin": "0000"}, {"id": "uc1", "name": "湊コーチ", "role": "coach", "mid": "mc1", "pin": "1001"}, {"id": "uc2", "name": "亀井コーチ", "role": "coach", "mid": "mc2", "pin": "1002"}, {"id": "uc3", "name": "津金コーチ", "role": "coach", "mid": "mc3", "pin": "1003"}, {"id": "uc4", "name": "佐々木コーチ", "role": "coach", "mid": "mc4", "pin": "1004"}, {"id": "uc5", "name": "石渡コーチ", "role": "coach", "mid": "mc5", "pin": "1005"}, {"id": "uc6", "name": "大塚コーチ", "role": "coach", "mid": "mc6", "pin": "1006"}, {"id": "uc7", "name": "小林コーチ", "role": "coach", "mid": "mc7", "pin": "1007"}, {"id": "uc8", "name": "渡辺コーチ", "role": "coach", "mid": "mc8", "pin": "1008"}, {"id": "up1", "name": "石渡家（りょう）", "role": "parent", "mid": "mp1", "pin": "2001"}, {"id": "up2", "name": "岩成家（けんせい）", "role": "parent", "mid": "mp2", "pin": "2002"}, {"id": "up3", "name": "太田家（うきょう）", "role": "parent", "mid": "mp3", "pin": "2003"}, {"id": "up4", "name": "大塚家（あつひと）", "role": "parent", "mid": "mp4", "pin": "2004"}, {"id": "up5", "name": "大西家（えいと）", "role": "parent", "mid": "mp5", "pin": "2005"}, {"id": "up6", "name": "河口家（なお）", "role": "parent", "mid": "mp6", "pin": "2006"}, {"id": "up7", "name": "小寺家（こうた）", "role": "parent", "mid": "mp7", "pin": "2007"}, {"id": "up8", "name": "小林家（りょうや）", "role": "parent", "mid": "mp8", "pin": "2008"}, {"id": "up9", "name": "佐藤家（ゆうお）", "role": "parent", "mid": "mp9", "pin": "2009"}, {"id": "up10", "name": "佐藤家（たいが）", "role": "parent", "mid": "mp10", "pin": "2010"}, {"id": "up11", "name": "角田家（かいり）", "role": "parent", "mid": "mp11", "pin": "2011"}, {"id": "up12", "name": "ちょう家（さとし）", "role": "parent", "mid": "mp12", "pin": "2012"}, {"id": "up13", "name": "中野家（そう）", "role": "parent", "mid": "mp13", "pin": "2013"}, {"id": "up14", "name": "渡辺家（えいたろう）", "role": "parent", "mid": "mp14", "pin": "2014"}], "members": [{"id": "mc1", "type": "coach", "name": "湊コーチ"}, {"id": "mc2", "type": "coach", "name": "亀井コーチ"}, {"id": "mc3", "type": "coach", "name": "津金コーチ"}, {"id": "mc4", "type": "coach", "name": "佐々木コーチ"}, {"id": "mc5", "type": "coach", "name": "石渡コーチ"}, {"id": "mc6", "type": "coach", "name": "大塚コーチ"}, {"id": "mc7", "type": "coach", "name": "小林コーチ"}, {"id": "mc8", "type": "coach", "name": "渡辺コーチ"}, {"id": "mp1", "type": "player", "name": "石渡 りょう", "parent": "石渡家（りょう）"}, {"id": "mp2", "type": "player", "name": "岩成 けんせい", "parent": "岩成家（けんせい）"}, {"id": "mp3", "type": "player", "name": "太田 うきょう", "parent": "太田家（うきょう）"}, {"id": "mp4", "type": "player", "name": "大塚 あつひと", "parent": "大塚家（あつひと）"}, {"id": "mp5", "type": "player", "name": "大西 えいと", "parent": "大西家（えいと）"}, {"id": "mp6", "type": "player", "name": "河口 なお", "parent": "河口家（なお）"}, {"id": "mp7", "type": "player", "name": "小寺 こうた", "parent": "小寺家（こうた）"}, {"id": "mp8", "type": "player", "name": "小林 りょうや", "parent": "小林家（りょうや）"}, {"id": "mp9", "type": "player", "name": "佐藤 ゆうお", "parent": "佐藤家（ゆうお）"}, {"id": "mp10", "type": "player", "name": "佐藤 たいが", "parent": "佐藤家（たいが）"}, {"id": "mp11", "type": "player", "name": "角田 かいり", "parent": "角田家（かいり）"}, {"id": "mp12", "type": "player", "name": "ちょう さとし", "parent": "ちょう家（さとし）"}, {"id": "mp13", "type": "player", "name": "中野 そう", "parent": "中野家（そう）"}, {"id": "mp14", "type": "player", "name": "渡辺 えいたろう", "parent": "渡辺家（えいたろう）"}], "events": [{"id": "e1", "date": "2026-04-04", "title": "練習", "type": "練習", "place": "校庭", "start": "13:45", "end": "15:00"}, {"id": "e2", "date": "2026-04-05", "title": "練習", "type": "練習", "place": "校庭", "start": "10:50", "end": "12:10"}, {"id": "e3", "date": "2026-04-11", "title": "練習", "type": "練習", "place": "校庭", "start": "14:00", "end": "15:30"}, {"id": "e4", "date": "2026-04-12", "title": "練習", "type": "練習", "place": "校庭全面", "start": "10:50", "end": "12:10"}, {"id": "e5", "date": "2026-04-12", "title": "雨天練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:30"}, {"id": "e6", "date": "2026-04-19", "title": "練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "10:00"}, {"id": "e7", "date": "2026-04-19", "title": "雨天練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:30"}, {"id": "e8", "date": "2026-04-25", "title": "練習", "type": "練習", "place": "校庭", "start": "14:00", "end": "15:30"}], "att": {"e1": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "小林家（りょうや）"}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "渡辺家（えいたろう）"}, "mp2": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}, "e2": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "佐藤家（ゆうお）"}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc2": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}, "e3": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp2": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp9": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp10": {"ans": "ok", "note": "", "care": "maybe", "duty": false, "pname": ""}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "中野家（そう）"}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}, "e4": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "石渡家（りょう）"}, "mp2": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp3": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "太田家（うきょう）"}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp6": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp9": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}, "e5": {"mp1": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp3": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp6": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp10": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mp12": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp14": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}, "e6": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp3": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "大塚家（あつひと）"}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp6": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp9": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp14": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc4": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}}, "e7": {"mp2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp3": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp6": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp10": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp12": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp14": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}}, "e8": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp9": {"ans": "ok", "note": "", "care": "ng", "duty": false, "pname": ""}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": true, "pname": "佐藤家（たいが）"}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false, "pname": ""}, "mp7": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mp11": {"ans": null, "note": "", "care": null, "duty": false, "pname": ""}, "mc1": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc2": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc7": {"ans": "ng", "note": "", "care": null, "duty": false, "pname": ""}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false, "pname": ""}}}};
-
+var D={"appTitle": "1年生チーム 出欠管理", "appLogo": "", "users": [{"id": "ua", "name": "管理者", "role": "admin", "pin": "0000"}, {"id": "uc1", "name": "湊コーチ", "role": "coach", "mid": "mc1", "pin": "1001"}, {"id": "uc2", "name": "亀井コーチ", "role": "coach", "mid": "mc2", "pin": "1002"}, {"id": "uc3", "name": "津金コーチ", "role": "coach", "mid": "mc3", "pin": "1003"}, {"id": "uc4", "name": "佐々木コーチ", "role": "coach", "mid": "mc4", "pin": "1004"}, {"id": "uc5", "name": "石渡コーチ", "role": "coach", "mid": "mc5", "pin": "1005"}, {"id": "uc6", "name": "大塚コーチ", "role": "coach", "mid": "mc6", "pin": "1006"}, {"id": "uc7", "name": "小林コーチ", "role": "coach", "mid": "mc7", "pin": "1007"}, {"id": "uc8", "name": "渡辺コーチ", "role": "coach", "mid": "mc8", "pin": "1008"}, {"id": "up1", "name": "石渡家（りょう）", "role": "parent", "mid": "mp1", "pin": "2001"}, {"id": "up2", "name": "岩成家（けんせい）", "role": "parent", "mid": "mp2", "pin": "2002"}, {"id": "up3", "name": "太田家（うきょう）", "role": "parent", "mid": "mp3", "pin": "2003"}, {"id": "up4", "name": "大塚家（あつひと）", "role": "parent", "mid": "mp4", "pin": "2004"}, {"id": "up5", "name": "大西家（えいと）", "role": "parent", "mid": "mp5", "pin": "2005"}, {"id": "up6", "name": "河口家（なお）", "role": "parent", "mid": "mp6", "pin": "2006"}, {"id": "up7", "name": "小寺家（こうた）", "role": "parent", "mid": "mp7", "pin": "2007"}, {"id": "up8", "name": "小林家（りょうや）", "role": "parent", "mid": "mp8", "pin": "2008"}, {"id": "up9", "name": "佐藤家（ゆうお）", "role": "parent", "mid": "mp9", "pin": "2009"}, {"id": "up10", "name": "佐藤家（たいが）", "role": "parent", "mid": "mp10", "pin": "2010"}, {"id": "up11", "name": "角田家（かいり）", "role": "parent", "mid": "mp11", "pin": "2011"}, {"id": "up12", "name": "ちょう家（さとし）", "role": "parent", "mid": "mp12", "pin": "2012"}, {"id": "up13", "name": "中野家（そう）", "role": "parent", "mid": "mp13", "pin": "2013"}, {"id": "up14", "name": "渡辺家（えいたろう）", "role": "parent", "mid": "mp14", "pin": "2014"}, {"id": "uc_mc9", "name": "高田コーチ", "role": "coach", "mid": "mc9", "pin": "1009"}], "members": [{"id": "mc1", "type": "coach", "name": "湊コーチ"}, {"id": "mc2", "type": "coach", "name": "亀井コーチ"}, {"id": "mc3", "type": "coach", "name": "津金コーチ"}, {"id": "mc4", "type": "coach", "name": "佐々木コーチ"}, {"id": "mc5", "type": "coach", "name": "石渡コーチ"}, {"id": "mc6", "type": "coach", "name": "大塚コーチ"}, {"id": "mc7", "type": "coach", "name": "小林コーチ"}, {"id": "mc8", "type": "coach", "name": "渡辺コーチ"}, {"id": "mp1", "type": "player", "name": "石渡 りょう", "parent": "石渡家（りょう）"}, {"id": "mp2", "type": "player", "name": "岩成 けんせい", "parent": "岩成家（けんせい）"}, {"id": "mp3", "type": "player", "name": "太田 うきょう", "parent": "太田家（うきょう）"}, {"id": "mp4", "type": "player", "name": "大塚 あつひと", "parent": "大塚家（あつひと）"}, {"id": "mp5", "type": "player", "name": "大西 えいと", "parent": "大西家（えいと）"}, {"id": "mp6", "type": "player", "name": "河口 なお", "parent": "河口家（なお）"}, {"id": "mp7", "type": "player", "name": "小寺 こうた", "parent": "小寺家（こうた）"}, {"id": "mp8", "type": "player", "name": "小林 りょうや", "parent": "小林家（りょうや）"}, {"id": "mp9", "type": "player", "name": "佐藤 ゆうお", "parent": "佐藤家（ゆうお）"}, {"id": "mp10", "type": "player", "name": "佐藤 たいが", "parent": "佐藤家（たいが）"}, {"id": "mp11", "type": "player", "name": "角田 かいり", "parent": "角田家（かいり）"}, {"id": "mp12", "type": "player", "name": "ちょう さとし", "parent": "ちょう家（さとし）"}, {"id": "mp13", "type": "player", "name": "中野 そう", "parent": "中野家（そう）"}, {"id": "mp14", "type": "player", "name": "渡辺 えいたろう", "parent": "渡辺家（えいたろう）"}, {"id": "mc9", "type": "coach", "name": "高田コーチ"}], "events": [{"id": "e1", "date": "2026-04-04", "title": "練習", "type": "練習", "place": "校庭", "start": "13:45", "end": "15:00"}, {"id": "e2", "date": "2026-04-05", "title": "練習", "type": "練習", "place": "校庭", "start": "10:50", "end": "12:10"}, {"id": "e3", "date": "2026-04-11", "title": "練習", "type": "練習", "place": "校庭", "start": "14:00", "end": "15:30"}, {"id": "e4", "date": "2026-04-12", "title": "練習", "type": "練習", "place": "校庭全面", "start": "10:50", "end": "12:10"}, {"id": "e5", "date": "2026-04-12", "title": "雨天練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:30"}, {"id": "e6", "date": "2026-04-19", "title": "練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "10:00"}, {"id": "e7", "date": "2026-04-19", "title": "雨天練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:30"}, {"id": "e8", "date": "2026-04-25", "title": "練習", "type": "練習", "place": "校庭", "start": "14:00", "end": "15:30"}, {"id": "n1", "date": "2026-08-22", "title": "練習", "type": "練習", "place": "校庭", "start": "15:30", "end": "17:00"}, {"id": "n2", "date": "2026-08-23", "title": "練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "10:00"}, {"id": "n3", "date": "2026-08-23", "title": "雨天練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:40"}, {"id": "n4", "date": "2026-08-29", "title": "練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:40"}, {"id": "n5", "date": "2026-08-30", "title": "練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "10:00"}, {"id": "n6", "date": "2026-08-30", "title": "雨天練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:40"}, {"id": "n7", "date": "2026-09-05", "title": "練習", "type": "練習", "place": "校庭", "start": "14:00", "end": "15:30"}, {"id": "n8", "date": "2026-09-06", "title": "練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:40"}, {"id": "n9", "date": "2026-09-12", "title": "練習", "type": "練習", "place": "校庭", "start": "14:00", "end": "15:30"}, {"id": "n10", "date": "2026-09-13", "title": "練習", "type": "練習", "place": "校庭", "start": "10:50", "end": "12:10"}, {"id": "n11", "date": "2026-09-19", "title": "練習", "type": "練習", "place": "校庭", "start": "14:00", "end": "15:30"}, {"id": "n12", "date": "2026-09-20", "title": "練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:45"}, {"id": "n13", "date": "2026-09-20", "title": "雨天練習", "type": "練習", "place": "体育館", "start": "8:00", "end": "9:30"}, {"id": "n14", "date": "2026-09-22", "title": "練習", "type": "練習", "place": "砧G", "start": "11:00", "end": "13:00"}, {"id": "n15", "date": "2026-09-23", "title": "練習", "type": "練習", "place": "校庭", "start": "12:30", "end": "14:45"}, {"id": "n16", "date": "2026-09-26", "title": "練習", "type": "練習", "place": "校庭", "start": "14:00", "end": "15:30"}], "att": {"e1": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp2": {"ans": null, "note": "", "care": null, "duty": false}, "mp7": {"ans": null, "note": "", "care": null, "duty": false}, "mp11": {"ans": null, "note": "", "care": null, "duty": false}, "mc1": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc2": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false}}, "e2": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp7": {"ans": null, "note": "", "care": null, "duty": false}, "mp11": {"ans": null, "note": "", "care": null, "duty": false}, "mc1": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc2": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false}}, "e3": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false}, "mp2": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp10": {"ans": "ok", "note": "", "care": "maybe", "duty": false}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp7": {"ans": null, "note": "", "care": null, "duty": false}, "mp11": {"ans": null, "note": "", "care": null, "duty": false}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false}}, "e4": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp2": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp3": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp6": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp7": {"ans": null, "note": "", "care": null, "duty": false}, "mp11": {"ans": null, "note": "", "care": null, "duty": false}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false}, "mc3": {"ans": "maybe", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false}}, "e5": {"mp1": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp6": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp8": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp10": {"ans": "ng", "note": "", "care": null, "duty": false}, "mp12": {"ans": "ng", "note": "", "care": null, "duty": false}, "mp13": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp14": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false}}, "e6": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp3": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp6": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp7": {"ans": null, "note": "", "care": null, "duty": false}, "mp11": {"ans": null, "note": "", "care": null, "duty": false}, "mc1": {"ans": "maybe", "note": "", "care": null, "duty": false}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc8": {"ans": "ng", "note": "", "care": null, "duty": false}}, "e7": {"mp2": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp6": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp8": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp10": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp12": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp13": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp14": {"ans": "ng", "note": "", "care": null, "duty": false}}, "e8": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false}, "mp2": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp7": {"ans": null, "note": "", "care": null, "duty": false}, "mp11": {"ans": null, "note": "", "care": null, "duty": false}, "mc1": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc2": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc7": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false}}, "n1": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp6": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp7": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc8": {"ans": "ng", "note": "", "care": null, "duty": false}}, "n2": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp3": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp6": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp7": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false}}, "n3": {"mp1": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp2": {"ans": "ng", "note": "", "care": null, "duty": false}, "mp3": {"ans": "ng", "note": "", "care": null, "duty": false}, "mp4": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp6": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp7": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp8": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp9": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp10": {"ans": "ng", "note": "", "care": null, "duty": false}, "mp11": {"ans": "ok", "note": "", "care": null, "duty": false}, "mp12": {"ans": "ng", "note": "", "care": null, "duty": false}, "mp14": {"ans": "ok", "note": "", "care": null, "duty": false}}, "n4": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp3": {"ans": "ok", "note": "", "care": "maybe", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp6": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp7": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc8": {"ans": "ng", "note": "", "care": null, "duty": false}}, "n5": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp3": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "maybe", "duty": false}, "mp6": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp7": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc7": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc8": {"ans": "ok", "note": "", "care": null, "duty": false}}, "n6": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp3": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "maybe", "duty": false}, "mp6": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp7": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": true}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ok", "note": "", "care": null, "duty": false}}, "n7": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false}, "mp2": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp3": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp6": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp7": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp11": {"ans": "maybe", "note": "", "care": "ok", "duty": false}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false}}, "n8": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp3": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp6": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp7": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp12": {"ans": null, "note": "", "care": "ng", "duty": false}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ok", "note": "", "care": null, "duty": false}}, "n9": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false}, "mp2": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp3": {"ans": "ok", "note": "", "care": "maybe", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp6": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp7": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false}}, "n10": {"mp1": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp2": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp3": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp6": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp7": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp8": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false}}, "n11": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp6": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp7": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false}}, "n12": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp3": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp7": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ok", "note": "", "care": null, "duty": false}}, "n13": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp3": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp7": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mc3": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "ok", "note": "", "care": null, "duty": false}}, "n14": {"mp1": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp2": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp3": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp7": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp10": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false}}, "n15": {"mp1": {"ans": "ok", "note": "", "care": "maybe", "duty": false}, "mp2": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp3": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp7": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp10": {"ans": "maybe", "note": "", "care": "maybe", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp12": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc5": {"ans": "maybe", "note": "", "care": null, "duty": false}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false}}, "n16": {"mp1": {"ans": "maybe", "note": "", "care": "ng", "duty": false}, "mp2": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp3": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp4": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp5": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp6": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp7": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp8": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp9": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp10": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp11": {"ans": "ok", "note": "", "care": "ng", "duty": false}, "mp12": {"ans": "ng", "note": "", "care": "ng", "duty": false}, "mp13": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mp14": {"ans": "ok", "note": "", "care": "ok", "duty": false}, "mc3": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc4": {"ans": "ok", "note": "", "care": null, "duty": false}, "mc5": {"ans": "ng", "note": "", "care": null, "duty": false}, "mc6": {"ans": "maybe", "note": "", "care": null, "duty": false}}}};
 function initEvents(){}
 
 function fmtD(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());}
 function p2(n){return n<10?'0'+n:''+n;}
 function fdsp(ds){var d=new Date(ds+'T00:00:00');return (d.getMonth()+1)+'月'+d.getDate()+'日('+DAYS[d.getDay()]+')'; }
 function esc(s){return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function peekA(eid,mid){var e=D.att[eid];return (e&&e[mid])?e[mid]:{ans:null,note:'',care:null,duty:false};}
 function getA(eid,mid){if(!D.att[eid])D.att[eid]={};if(!D.att[eid][mid])D.att[eid][mid]={ans:null,note:'',care:null,duty:false,pname:''};return D.att[eid][mid];}
 
-function save(){try{localStorage.setItem('sc7',JSON.stringify(D));}catch(e){}}
+function save(){try{localStorage.setItem('sc8',JSON.stringify(D));}catch(e){}}
 function load(){
   try{
-    var s=localStorage.getItem('sc7');
+    var s=localStorage.getItem('sc8');
     if(s){
       var p=JSON.parse(s);
       if(p.appTitle)D.appTitle=p.appTitle;
@@ -183,6 +196,93 @@ function load(){
       if(p.att)D.att=p.att;
     }
   }catch(e){}
+}
+
+
+// 当番名をマスタから取得（退団者は履歴として att の pname を使う）
+function dutyName(mid,a){
+  for(var i=0;i<D.members.length;i++){
+    if(D.members[i].id===mid)return D.members[i].parent||D.members[i].name;
+  }
+  return (a&&a.pname)?a.pname:'';
+}
+function dutyList(att){
+  var r=[];
+  for(var k in att){ if(att[k]&&att[k].duty){ var nm=dutyName(k,att[k]); if(nm)r.push(nm); } }
+  return r;
+}
+// 選手のみの出欠集計
+function tally(att){
+  var t={ok:0,ng:0,my:0,no:0};
+  for(var i=0;i<D.members.length;i++){
+    var m=D.members[i];
+    if(m.type!=='player')continue;
+    var a=att[m.id];
+    if(!a||!a.ans)t.no++;
+    else if(a.ans==='ok')t.ok++;
+    else if(a.ans==='ng')t.ng++;
+    else t.my++;
+  }
+  return t;
+}
+// コーチのみの出欠集計
+function tallyCoach(att){
+  var t={ok:0,ng:0,my:0,no:0};
+  for(var i=0;i<D.members.length;i++){
+    var m=D.members[i];
+    if(m.type!=='coach')continue;
+    var a=att[m.id];
+    if(!a||!a.ans)t.no++;
+    else if(a.ans==='ok')t.ok++;
+    else if(a.ans==='ng')t.ng++;
+    else t.my++;
+  }
+  return t;
+}
+
+
+// ===== 入力期限 =====
+function dlDays(){ return (typeof D.dlDays==='number')?D.dlDays:1; }
+function addDays(ds,n){
+  var d=new Date(ds+'T00:00:00'); d.setDate(d.getDate()+n); return fmtD(d);
+}
+// イベントの実効期限（未設定なら「開催のN日前」）
+function evDeadline(ev){ return ev.dl || addDays(ev.date, -dlDays()); }
+
+// ログイン中の本人の「期限切れ未入力」を集める
+function myOverdue(){
+  if(!ME||!ME.mid)return [];
+  var today=fmtD(TODAY), out=[];
+  for(var i=0;i<D.events.length;i++){
+    var ev=D.events[i];
+    if(ev.date<today)continue;              // 終わった予定は対象外
+    if(evDeadline(ev)>=today)continue;      // まだ期限内
+    var a=(D.att[ev.id]||{})[ME.mid];
+    var needAns=!a||!a.ans;
+    var needCare=(ME.role==='parent')&&(!a||!a.care);
+    if(needAns||needCare)out.push({ev:ev,ans:needAns,care:needCare});
+  }
+  out.sort(function(x,y){return x.ev.date<y.ev.date?-1:1;});
+  return out;
+}
+
+function remindBanner(){
+  var list=myOverdue();
+  if(!list.length)return '';
+  var s='<div class="remind"><div class="remind-t">&#9888; 入力期限を過ぎている予定があります（'+list.length+'件）</div>';
+  for(var i=0;i<list.length&&i<5;i++){
+    var r=list[i], miss=[];
+    if(r.ans)miss.push('出欠');
+    if(r.care)miss.push('看護当番');
+    s+='<div class="remind-r">'+fdsp(r.ev.date)+' '+esc(r.ev.title)+' <span class="remind-m">'+miss.join('・')+'が未入力</span></div>';
+  }
+  if(list.length>5)s+='<div class="remind-r">ほか'+(list.length-5)+'件</div>';
+  s+='<button class="remind-b" id="remind-go">入力する</button></div>';
+  return s;
+}
+function bindRemind(){
+  var b=document.getElementById('remind-go');
+  if(b)b.onclick=function(){goInput();};
 }
 
 function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(function(){t.className='toast';},2200);}
@@ -219,6 +319,7 @@ function goAdmin(){show('sa');drawAdmin();}
 function goLogin(){show('sl');drawLogin();}
 
 document.getElementById('hbtn').onclick=function(){ME?doLogout():goLogin();};
+document.getElementById('hset').onclick=function(){openSettingsModal();};
 document.getElementById('tc').onclick=goCalendar;
 document.getElementById('ti').onclick=goInput;
 document.getElementById('ta').onclick=goAdmin;
@@ -227,6 +328,7 @@ function doLogout(){
   ME=null;
   document.getElementById('hname').textContent='未ログイン';
   document.getElementById('hbtn').textContent='ログイン';
+  document.getElementById('hset').style.display='none';
   document.getElementById('ti').style.display='none';
   document.getElementById('ta').style.display='none';
   goCalendar();showToast('ログアウトしました');
@@ -269,6 +371,7 @@ function drawLogin(){
     ME=found;
     document.getElementById('hname').textContent=found.name;
     document.getElementById('hbtn').textContent='ログアウト';
+    document.getElementById('hset').style.display='';
     document.getElementById('ti').style.display='';
     if(found.role==='admin')document.getElementById('ta').style.display='';
     goCalendar();showToast('ようこそ、'+found.name+'さん');
@@ -287,7 +390,8 @@ function typeBadge(type){
 function drawCal(){
   var months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   var todayStr=fmtD(TODAY);
-  var html='<div class="card"><div class="cal-hdr">';
+  var html=remindBanner();
+  html+='<div class="card"><div class="cal-hdr">';
   html+='<button class="cal-nav" id="cal-prev">&#8249;</button>';
   html+='<span class="cal-ym">'+CY+'年 '+months[CM]+'</span>';
   html+='<button class="cal-nav" id="cal-next">&#8250;</button>';
@@ -301,10 +405,10 @@ function drawCal(){
     var ds=CY+'-'+p2(CM+1)+'-'+p2(d);
     var dow=new Date(ds+'T00:00:00').getDay();
     var evs=D.events.filter(function(e){return e.date===ds;});
-    var isSel=evs.some(function(e){return e.id===selEid;});
+    var isSel=(ds===selDate)||evs.some(function(e){return e.id===selEid;});
     var hasDuty=evs.some(function(ev){
-      var av=Object.values(D.att[ev.id]||{});
-      for(var i=0;i<av.length;i++)if(av[i].duty)return true;
+      var aa=D.att[ev.id]||{};
+      for(var k in aa)if(aa[k].duty)return true;
       return false;
     });
     var cls='cday'+(new Date(ds+'T00:00:00').toDateString()===TODAY.toDateString()?' tod':'')+(isSel?' sel':'')+(dow===0?' sun':dow===6?' sat':'');
@@ -325,24 +429,26 @@ function drawCal(){
     for(var i=0;i<evList.length;i++){
       var ev=evList[i];
       var att=D.att[ev.id]||{};
-      var ok=0,ng=0,my=0,no=0;
-      for(var j=0;j<D.members.length;j++){
-        var a=att[D.members[j].id];
-        if(!a||!a.ans)no++;else if(a.ans==='ok')ok++;else if(a.ans==='ng')ng++;else my++;
-      }
-      var duties=[];var av=Object.values(att);
-      for(var j=0;j<av.length;j++)if(av[j].duty&&av[j].pname)duties.push(av[j].pname);
-      html+='<div class="ecard'+(ev.id===selEid?' sel':'')+'" data-eid="'+ev.id+'">';
+      var tp=tally(att),tcz=tallyCoach(att);
+      var duties=dutyList(att);
+      html+='<div class="ecard'+((ev.id===selEid||ev.date===selDate)?' sel':'')+'" data-eid="'+ev.id+'" data-date="'+ev.date+'">';
       html+='<div class="emeta">'+fdsp(ev.date)+(ev.start?' '+ev.start:'')+(ev.end?' 〜 '+ev.end:'')+(ev.place?' | '+esc(ev.place):'')+'</div>';
       html+='<div class="etitle">'+typeBadge(ev.type)+esc(ev.title)+'</div>';
-      html+='<div class="esum">';
-      if(ok)html+='<span style="color:#2e7d32"><b>○</b> '+ok+'名</span>';
-      if(my)html+='<span style="color:#f57f17"><b>△</b> '+my+'名</span>';
-      if(ng)html+='<span style="color:#c62828"><b>×</b> '+ng+'名</span>';
-      if(no)html+='<span style="color:#aaa">未入力 '+no+'名</span>';
+      html+='<div class="esum"><span style="color:#888;min-width:34px">選手</span>';
+      if(tp.ok)html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span>';
+      if(tp.my)html+='<span style="color:#f57f17"><b>△</b>'+tp.my+'</span>';
+      if(tp.ng)html+='<span style="color:#c62828"><b>×</b>'+tp.ng+'</span>';
+      if(tp.no)html+='<span style="color:#bbb">未'+tp.no+'</span>';
+      html+='</div>';
+      html+='<div class="esum"><span style="color:#888;min-width:34px">コーチ</span>';
+      if(tcz.ok)html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span>';
+      if(tcz.my)html+='<span style="color:#f57f17"><b>△</b>'+tcz.my+'</span>';
+      if(tcz.ng)html+='<span style="color:#c62828"><b>×</b>'+tcz.ng+'</span>';
+      if(tcz.no)html+='<span style="color:#bbb">未'+tcz.no+'</span>';
       html+='</div>';
       if(duties.length)html+='<div><span class="duty-bar">当番: '+esc(duties.join('・'))+'</span></div>';
       if(ME&&ME.role==='admin'){
+        html+='<div style="font-size:11px;color:#aaa;margin-top:4px">入力期限: '+fdsp(evDeadline(ev))+(ev.dl?'':'（自動）')+'</div>';
         html+='<div style="display:flex;gap:6px;margin-top:8px;border-top:1px solid #f0f0f0;padding-top:8px">';
         html+='<button class="icobtn ev-edit-btn" data-eid="'+ev.id+'" style="font-size:12px;padding:4px 12px">編集</button>';
         html+='<button class="icobtn del ev-del-btn" data-eid="'+ev.id+'" style="font-size:12px;padding:4px 12px">削除</button>';
@@ -352,6 +458,7 @@ function drawCal(){
     }
   }
   document.getElementById('sc').innerHTML=html;
+  bindRemind();
   document.getElementById('cal-prev').onclick=function(){changeMonth(-1);};
   document.getElementById('cal-next').onclick=function(){changeMonth(1);};
   var cdays=document.querySelectorAll('.cday:not(.emp)');
@@ -359,9 +466,13 @@ function drawCal(){
     (function(el){
       el.onclick=function(){
         var ds=el.getAttribute('data-ds');
-        var found=null;
-        for(var j=0;j<D.events.length;j++)if(D.events[j].date===ds){found=D.events[j];break;}
-        if(found){selEid=found.id;drawCal();}
+        var hits=D.events.filter(function(e){return e.date===ds;});
+        if(!hits.length)return;
+        selDate=ds;
+        selEid=(hits.length===1)?hits[0].id:null;
+        drawCal();
+        var first=document.querySelector('.ecard[data-date="'+ds+'"]');
+        if(first)first.scrollIntoView({block:'center'});
       };
     })(cdays[i]);
   }
@@ -404,8 +515,7 @@ function drawDetail(){
   var ev=null;for(var i=0;i<D.events.length;i++)if(D.events[i].id===selEid){ev=D.events[i];break;}
   if(!ev){goCalendar();return;}
   var att=D.att[ev.id]||{};
-  var duties=[];var av=Object.values(att);
-  for(var i=0;i<av.length;i++)if(av[i].duty&&av[i].pname)duties.push(av[i].pname);
+  var duties=dutyList(att);
   var html='<button class="back" id="detback">&#8592; カレンダーに戻る</button>';
   html+='<div class="card">';
   html+='<div style="font-size:12px;color:#888;margin-bottom:4px">'+fdsp(ev.date)+(ev.start?' '+ev.start:'')+(ev.end?' 〜 '+ev.end:'')+'</div>';
@@ -413,13 +523,18 @@ function drawDetail(){
   if(ev.place)html+='<div style="font-size:13px;color:#888">'+esc(ev.place)+'</div>';
   html+='</div>';
   if(duties.length)html+='<div class="dutybox"><div class="dutybox-t">看護当番</div><div class="dutybox-n">'+esc(duties.join('・'))+'</div></div>';
+  var tp=tally(att),tcz=tallyCoach(att);
+  html+='<div class="card" style="padding:10px 14px"><div class="esum" style="margin-bottom:2px"><span style="color:#888;min-width:34px">選手</span>';
+  html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span><span style="color:#f57f17"><b>△</b>'+tp.my+'</span><span style="color:#c62828"><b>×</b>'+tp.ng+'</span><span style="color:#bbb">未'+tp.no+'</span></div>';
+  html+='<div class="esum"><span style="color:#888;min-width:34px">コーチ</span>';
+  html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span><span style="color:#f57f17"><b>△</b>'+tcz.my+'</span><span style="color:#c62828"><b>×</b>'+tcz.ng+'</span><span style="color:#bbb">未'+tcz.no+'</span></div></div>';
   function mkrow(m){
     var a=att[m.id]||{};var ans=a.ans||null;
-    if(ans==='ng')return '';
-    var mark=ans==='ok'?'<span style="color:#2e7d32;font-size:18px">○</span>':ans==='maybe'?'<span style="color:#f57f17;font-size:18px">△</span>':'<span style="color:#ccc;font-size:18px">—</span>';
-    var note=a.note||'';var isDuty=a.duty;
-    var r='<div class="mcard'+(isDuty?' duty-hl':'')+'"><div class="mtop">'+mark;
-    r+='<span class="mname">'+esc(m.name)+(isDuty?'<span class="dbadge">当番</span>':'')+'</span>';
+    if(ans!=='ok'&&ans!=='maybe')return '';
+    var mark=ans==='ok'?'<span style="color:#2e7d32;font-size:18px">○</span>':'<span style="color:#f57f17;font-size:18px">△</span>';
+    var note=a.note||'';
+    var r='<div class="mcard"><div class="mtop">'+mark;
+    r+='<span class="mname">'+esc(m.name)+'</span>';
     if(note)r+='<button class="ntoggle">&#9656; 備考</button>';
     r+='</div>'+(note?'<div class="mnote">'+esc(note)+'</div>':'')+'</div>';
     return r;
@@ -454,25 +569,23 @@ function drawInput(){
   var mid=ME.mid;
   var member=null;for(var i=0;i<D.members.length;i++)if(D.members[i].id===mid){member=D.members[i];break;}
   if(!member){body.innerHTML='<div class="noev">メンバー情報が見つかりません</div>';return;}
-  var now=new Date(TODAY);now.setDate(now.getDate()-1);
-  var evs=[];
-  for(var i=0;i<D.events.length;i++)if(new Date(D.events[i].date+'T00:00:00')>=now)evs.push(D.events[i]);
-  evs.sort(function(a,b){return a.date<b.date?-1:1;});
-  if(!evs.length){body.innerHTML='<div class="noev">入力できる予定がありません</div>';return;}
+  var ts=fmtD(TODAY);
+  var all=D.events.slice().sort(function(a,b){return a.date<b.date?-1:1;});
+  var future=all.filter(function(e){return e.date>=ts;});
+  var past=all.filter(function(e){return e.date<ts;}).reverse();
+  if(!all.length){body.innerHTML='<div class="noev">予定がありません</div>';return;}
   var isParent=ME.role==='parent';
-  // PIN変更セクション（末尾に追加）
-  var pinSec='<div class="card"><div style="font-weight:bold;margin-bottom:8px">PINコードの変更</div>';
-  pinSec+='<div class="flbl">現在のPIN</div><input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-cur" placeholder="••••">';
-  pinSec+='<div class="flbl">新しいPIN（4桁）</div><input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-new" placeholder="••••">';
-  pinSec+='<div class="flbl">新しいPIN（確認）</div><input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-new2" placeholder="••••">';
-  pinSec+='<button class="addbtn primary" id="pin-change-btn" style="width:100%;margin-top:8px">PINを変更する</button>';
-  pinSec+='<div style="color:#c62828;font-size:13px;min-height:18px;margin-top:4px" id="pin-err"></div></div>';
-  var html='';
+  var evs=future.concat(showPast?past:[]);
+  var html=remindBanner();
+  if(!future.length)html+='<div class="noev" style="padding:1rem">今後の予定はありません</div>';
   for(var i=0;i<evs.length;i++){
-    var ev=evs[i];var a=getA(ev.id,mid);
+    var ev=evs[i];var a=peekA(ev.id,mid);
+    if(i===future.length)html+='<div class="slbl" style="margin-top:16px">過去の予定</div>';
     html+='<div class="icard">';
     html+='<div class="ittl">'+typeBadge(ev.type)+esc(ev.title)+'</div>';
     html+='<div class="imeta">'+fdsp(ev.date)+(ev.start?' '+ev.start:'')+(ev.end?' 〜 '+ev.end:'')+(ev.place?' | '+esc(ev.place):'')+'</div>';
+    var dlv=evDeadline(ev),over=(dlv<fmtD(TODAY)&&ev.date>=fmtD(TODAY));
+    html+='<div class="imeta" style="margin-top:-6px;'+(over?'color:#EF6C00;font-weight:bold':'')+'">入力期限: '+fdsp(dlv)+(over?'（期限切れ）':'')+'</div>';
     html+='<div class="isec"><div class="ilbl">'+esc(member.name)+'の出欠</div>';
     html+='<div class="abtnrow">';
     html+='<button class="abtn'+(a.ans==='ok'?' ok':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ok" data-t="ans">○</button>';
@@ -490,22 +603,11 @@ function drawInput(){
     }
     html+='</div>';
   }
-  html+=pinSec;
+  html+='<button class="addbtn" id="toggle-past" style="width:100%;margin-top:12px">'+(showPast?'過去の予定を隠す':'過去の予定も表示する（'+past.length+'件）')+'</button>';
   body.innerHTML=html;
-  // PIN変更
-  document.getElementById('pin-change-btn').onclick=function(){
-    var cur=document.getElementById('pin-cur').value;
-    var nw=document.getElementById('pin-new').value;
-    var nw2=document.getElementById('pin-new2').value;
-    var errEl=document.getElementById('pin-err');
-    if(cur!==ME.pin){errEl.textContent='現在のPINが違います';return;}
-    if(!/^\d{4}$/.test(nw)){errEl.textContent='新しいPINは4桁の数字で入力してください';return;}
-    if(nw!==nw2){errEl.textContent='新しいPINが一致しません';return;}
-    for(var i=0;i<D.users.length;i++)if(D.users[i].id===ME.id){D.users[i].pin=nw;ME.pin=nw;break;}
-    save();errEl.textContent='';
-    document.getElementById('pin-cur').value='';document.getElementById('pin-new').value='';document.getElementById('pin-new2').value='';
-    showToast('PINを変更しました');
-  };
+  bindRemind();
+  var tp2=document.getElementById('toggle-past');
+  if(tp2)tp2.onclick=function(){showPast=!showPast;drawInput();};
   // ○×△
   var abtns=body.querySelectorAll('.abtn');
   for(var i=0;i<abtns.length;i++){
@@ -544,22 +646,24 @@ function drawAdmin(){
   var body=document.getElementById('sa');
   if(!ME||ME.role!=='admin'){body.innerHTML='<div class="noev">管理者のみアクセスできます</div>';return;}
   var evsSorted=D.events.slice().sort(function(a,b){return a.date<b.date?-1:1;});
-  // アプリ設定
-  var html='<div class="acard"><h3>アプリ設定</h3>';
-  html+='<label class="flbl">タイトル</label>';
-  html+='<input type="text" class="finp" id="app-title-inp" value="'+esc(D.appTitle||'')+'" placeholder="チーム出欠管理">';
-  html+='<label class="flbl">ロゴ画像</label>';
-  html+='<input type="file" accept="image/*" id="logo-file" style="font-size:13px;margin-top:4px">';
-  if(D.appLogo)html+='<div style="margin-top:6px"><img src="'+D.appLogo+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover"> <button class="icobtn del" id="logo-del-btn">削除</button></div>';
-  html+='<button class="addbtn primary" id="app-save-btn" style="width:100%;margin-top:10px">設定を保存</button></div>';
   // 当番選定
+  var html='';
   html+='<div class="acard"><h3>看護当番の選定</h3>';
   if(evsSorted.length){
+    var ts=fmtD(TODAY);
+    var defId=null;
+    for(var i=0;i<evsSorted.length;i++){if(evsSorted[i].date>=ts){defId=evsSorted[i].id;break;}}
+    if(!defId)defId=evsSorted[evsSorted.length-1].id;
+    if(dutyEid){for(var i=0;i<evsSorted.length;i++)if(evsSorted[i].id===dutyEid){defId=dutyEid;break;}}
     html+='<select class="finp" id="dsel">';
-    for(var i=0;i<evsSorted.length;i++)html+='<option value="'+evsSorted[i].id+'">'+fdsp(evsSorted[i].date)+' '+esc(evsSorted[i].title)+'</option>';
+    for(var i=0;i<evsSorted.length;i++)html+='<option value="'+evsSorted[i].id+'"'+(evsSorted[i].id===defId?' selected':'')+'>'+fdsp(evsSorted[i].date)+' '+esc(evsSorted[i].title)+(evsSorted[i].place?' @'+esc(evsSorted[i].place):'')+'</option>';
     html+='</select><div id="dlist" style="margin-top:8px"></div>';
   }else html+='<div style="color:#aaa;font-size:13px">予定がありません</div>';
   html+='</div>';
+  // Googleカレンダー取り込み
+  html+='<div class="acard"><h3>Googleカレンダーから取り込み</h3>';
+  html+='<div style="font-size:12px;color:#888;margin-bottom:8px">松丘FCの公開カレンダーを読み込んで、必要な予定だけ選んで登録します。</div>';
+  html+='<button class="addbtn primary" id="gcal-open" style="margin-top:0">カレンダーを開く</button></div>';
   // イベント追加
   html+='<div class="acard"><h3>イベントを追加</h3>';
   html+='<div class="g2"><div><label class="flbl">日付</label><input type="date" class="finp" id="nd"></div>';
@@ -567,6 +671,7 @@ function drawAdmin(){
   html+='<label class="flbl">タイトル</label><input type="text" class="finp" id="nt" placeholder="土曜練習" style="margin-bottom:6px">';
   html+='<label class="flbl">場所</label><input type="text" class="finp" id="np" placeholder="〇〇公園" style="margin-bottom:6px">';
   html+='<label class="flbl">時間</label><div class="g2"><input type="time" class="finp" id="ns"><input type="time" class="finp" id="ne"></div>';
+  html+='<label class="flbl">入力期限（空欄なら開催の'+dlDays()+'日前）</label><input type="date" class="finp" id="ndl">';
   html+='<button class="addbtn primary" id="addev-btn">追加する</button></div>';
   // コピー追加
   html+='<div class="acard"><h3>既存イベントをコピーして追加</h3>';
@@ -587,11 +692,12 @@ function drawAdmin(){
   html+='<div class="g2"><div><label class="flbl">種別</label><input type="text" class="finp" id="btype" placeholder="練習"></div>';
   html+='<div><label class="flbl">タイトル</label><input type="text" class="finp" id="bt" placeholder="定期練習"></div></div>';
   html+='<label class="flbl">時間</label><div class="g2"><input type="time" class="finp" id="bst"><input type="time" class="finp" id="ben"></div>';
-  html+='<button class="addbtn primary" id="bulk-btn">一括追加する</button></div>';
+  html+='<button class="addbtn primary" id="bulk-btn">一括追加する</button>';
+  html+='<div style="font-size:11px;color:#aaa;margin-top:6px">入力期限は開催の'+dlDays()+'日前になります</div></div>';
   // メンバー管理
   html+='<div class="acard"><h3>メンバー管理</h3>';
   html+='<div class="g2"><div><label class="flbl">選手名</label><input type="text" class="finp" id="mnp" placeholder="山田 太郎"></div>';
-  html+='<div><label class="flbl">保護者名</label><input type="text" class="finp" id="mpp" placeholder="山田 お母さん"></div></div>';
+  html+='<div><label class="flbl">保護者名</label><input type="text" class="finp" id="mpp" placeholder="山田家（太郎）"></div></div>';
   html+='<label class="flbl">保護者PIN（4桁）</label><input type="text" class="finp" id="mpin" maxlength="4" placeholder="1234" style="margin-bottom:6px">';
   html+='<button class="addbtn primary" id="add-player-btn">選手を追加</button>';
   html+='<div class="sep"></div>';
@@ -600,30 +706,16 @@ function drawAdmin(){
   html+='<button class="addbtn primary" id="add-coach-btn" style="margin-top:6px">コーチを追加</button>';
   html+='<div id="mlist" style="margin-top:12px"></div></div>';
   body.innerHTML=html;
-  // アプリ設定
-  document.getElementById('app-save-btn').onclick=function(){
-    var t=document.getElementById('app-title-inp').value.trim();
-    if(t)D.appTitle=t;
-    save();updateHeader();showToast('設定を保存しました');
-  };
-  var logoFile=document.getElementById('logo-file');
-  logoFile.onchange=function(){
-    var f=logoFile.files[0];if(!f)return;
-    var reader=new FileReader();
-    reader.onload=function(e){D.appLogo=e.target.result;save();updateHeader();showToast('ロゴを設定しました');drawAdmin();};
-    reader.readAsDataURL(f);
-  };
-  var logoDel=document.getElementById('logo-del-btn');
-  if(logoDel)logoDel.onclick=function(){D.appLogo='';save();updateHeader();showToast('ロゴを削除しました');drawAdmin();};
+  document.getElementById('gcal-open').onclick=openGcalModal;
   // 当番選定
   var dsel=document.getElementById('dsel');
-  if(dsel){dsel.onchange=drawDuty;drawDuty();}
+  if(dsel){dsel.onchange=function(){dutyEid=dsel.value;drawDuty();};dutyEid=dsel.value;drawDuty();}
   // イベント追加
   document.getElementById('addev-btn').onclick=function(){
     var d=document.getElementById('nd').value;
     var t=document.getElementById('nt').value.trim();
     if(!d||!t){showToast('日付とタイトルを入力してください');return;}
-    D.events.push({id:'e'+Date.now(),date:d,title:t,type:document.getElementById('ntype').value.trim()||'練習',place:document.getElementById('np').value.trim(),start:document.getElementById('ns').value,end:document.getElementById('ne').value});
+    D.events.push({id:'e'+Date.now(),date:d,title:t,type:document.getElementById('ntype').value.trim()||'練習',place:document.getElementById('np').value.trim(),start:document.getElementById('ns').value,end:document.getElementById('ne').value,dl:document.getElementById('ndl').value||''});
     save();showToast('追加しました');
     document.getElementById('nd').value='';document.getElementById('nt').value='';document.getElementById('np').value='';document.getElementById('ntype').value='';
     drawAdmin();
@@ -666,9 +758,8 @@ function drawAdmin(){
     if(!/^\d{4}$/.test(pin)){showToast('PINは4桁の数字で入力してください');return;}
     var mid2='m'+Date.now();
     D.members.push({id:mid2,type:'player',name:name,parent:par});
-    D.users.push({id:'u'+Date.now(),name:(par||name)+'家',role:'parent',mid:mid2,pin:pin});
-    save();document.getElementById('mnp').value='';document.getElementById('mpp').value='';document.getElementById('mpin').value='';
-    drawMlist();showToast('追加しました');
+    D.users.push({id:'u'+Date.now(),name:(par||name),role:'parent',mid:mid2,pin:pin});
+    save();showToast('追加しました');drawAdmin();
   };
   // コーチ追加
   document.getElementById('add-coach-btn').onclick=function(){
@@ -679,10 +770,187 @@ function drawAdmin(){
     var mid2='m'+Date.now();
     D.members.push({id:mid2,type:'coach',name:name});
     D.users.push({id:'u'+Date.now(),name:name+'（コーチ）',role:'coach',mid:mid2,pin:pin});
-    save();document.getElementById('mcn').value='';document.getElementById('mcpin').value='';
-    drawMlist();showToast('追加しました');
+    save();showToast('追加しました');drawAdmin();
   };
   drawMlist();
+}
+
+
+function openSettingsModal(){
+  if(!ME)return;
+  var isAdmin=ME.role==='admin';
+  var mhtml='<div class="modal-ttl">'+(isAdmin?'アプリ設定':'PINコードの変更')+'<button class="modal-close" onclick="closeModal()">&#215;</button></div>';
+  if(isAdmin){
+    // 管理者：アプリ設定
+    mhtml+='<label class="flbl">タイトル</label>';
+    mhtml+='<input type="text" class="finp" id="app-title-inp" value="'+esc(D.appTitle||'')+'" placeholder="チーム出欠管理" style="margin-bottom:8px">';
+    mhtml+='<label class="flbl">既定の入力期限（開催の何日前）</label>';
+    mhtml+='<input type="number" min="0" max="30" class="finp" id="app-dl-days" value="'+dlDays()+'" style="margin-bottom:8px">';
+    mhtml+='<label class="flbl">ロゴ画像</label>';
+    mhtml+='<input type="file" accept="image/*" id="logo-file" style="font-size:13px;margin-top:4px;margin-bottom:8px">';
+    if(D.appLogo)mhtml+='<div style="margin-bottom:8px"><img src="'+D.appLogo+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover;vertical-align:middle"> <button class="icobtn del" id="logo-del-btn">削除</button></div>';
+    mhtml+='<button class="modal-btn" id="app-save-btn">設定を保存</button>';
+    mhtml+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>';
+  } else {
+    // 一般ユーザー：PIN変更
+    mhtml+='<label class="flbl">現在のPIN</label>';
+    mhtml+='<input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-cur" placeholder="••••" style="font-size:20px;letter-spacing:6px;text-align:center;margin-bottom:6px">';
+    mhtml+='<label class="flbl">新しいPIN（4桁）</label>';
+    mhtml+='<input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-new" placeholder="••••" style="font-size:20px;letter-spacing:6px;text-align:center;margin-bottom:6px">';
+    mhtml+='<label class="flbl">新しいPIN（確認）</label>';
+    mhtml+='<input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-new2" placeholder="••••" style="font-size:20px;letter-spacing:6px;text-align:center;margin-bottom:6px">';
+    mhtml+='<div style="color:#c62828;font-size:13px;min-height:16px;margin-bottom:4px" id="pin-err"></div>';
+    mhtml+='<button class="modal-btn" id="pin-change-btn">PINを変更する</button>';
+    mhtml+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>';
+  }
+  openModal(mhtml);
+  if(isAdmin){
+    document.getElementById('app-save-btn').onclick=function(){
+      var t=document.getElementById('app-title-inp').value.trim();
+      if(t)D.appTitle=t;
+      var dd=parseInt(document.getElementById('app-dl-days').value,10);
+      if(!isNaN(dd)&&dd>=0)D.dlDays=dd;
+      save();updateHeader();showToast('設定を保存しました');closeModal();
+    };
+    var logoFile=document.getElementById('logo-file');
+    logoFile.onchange=function(){
+      var f=logoFile.files[0];if(!f)return;
+      var reader=new FileReader();
+      reader.onload=function(e){D.appLogo=e.target.result;save();updateHeader();showToast('ロゴを設定しました');closeModal();};
+      reader.readAsDataURL(f);
+    };
+    var logoDel=document.getElementById('logo-del-btn');
+    if(logoDel)logoDel.onclick=function(){D.appLogo='';save();updateHeader();showToast('ロゴを削除しました');closeModal();};
+  } else {
+    document.getElementById('pin-change-btn').onclick=function(){
+      var cur=document.getElementById('pin-cur').value;
+      var nw=document.getElementById('pin-new').value;
+      var nw2=document.getElementById('pin-new2').value;
+      var errEl=document.getElementById('pin-err');
+      if(cur!==ME.pin){errEl.textContent='現在のPINが違います';return;}
+      if(!/^\d{4}$/.test(nw)){errEl.textContent='新しいPINは4桁の数字で入力してください';return;}
+      if(nw!==nw2){errEl.textContent='新しいPINが一致しません';return;}
+      for(var i=0;i<D.users.length;i++)if(D.users[i].id===ME.id){D.users[i].pin=nw;ME.pin=nw;break;}
+      save();showToast('PINを変更しました');closeModal();
+    };
+  }
+}
+
+
+// ===== Googleカレンダー取り込み =====
+function gcalCfg(){
+  if(!D.gcal)D.gcal={calId:'allmatsugaokafc@gmail.com',apiKey:'',kw:'2年',months:3};
+  if(typeof D.gcal.months!=='number')D.gcal.months=3;
+  return D.gcal;
+}
+var gcalItems=[];
+
+function openGcalModal(){
+  var c=gcalCfg();
+  var m='<div class="modal-ttl">Googleカレンダーから取り込み<button class="modal-close" onclick="closeModal()">&#215;</button></div>';
+  m+='<label class="flbl">カレンダーID</label>';
+  m+='<input type="text" class="finp" id="gc-id" value="'+esc(c.calId)+'" placeholder="xxx@gmail.com" style="margin-bottom:6px">';
+  m+='<label class="flbl">APIキー</label>';
+  m+='<input type="text" class="finp" id="gc-key" value="'+esc(c.apiKey)+'" placeholder="AIza..." style="margin-bottom:6px">';
+  m+='<div class="g2"><div><label class="flbl">絞り込み語（カンマ区切り）</label><input type="text" class="finp" id="gc-kw" value="'+esc(c.kw)+'" placeholder="2年"></div>';
+  m+='<div><label class="flbl">先何ヶ月</label><input type="number" min="1" max="12" class="finp" id="gc-mo" value="'+c.months+'"></div></div>';
+  m+='<button class="modal-btn" id="gc-fetch" style="margin-top:10px">カレンダーを読み込む</button>';
+  m+='<div id="gc-msg" style="font-size:13px;margin-top:8px;min-height:18px"></div>';
+  m+='<div id="gc-list"></div>';
+  m+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">閉じる</button>';
+  openModal(m);
+  document.getElementById('gc-fetch').onclick=gcalFetch;
+}
+
+function gcalFetch(){
+  var c=gcalCfg();
+  c.calId=document.getElementById('gc-id').value.trim();
+  c.apiKey=document.getElementById('gc-key').value.trim();
+  c.kw=document.getElementById('gc-kw').value.trim();
+  var mo=parseInt(document.getElementById('gc-mo').value,10); if(!isNaN(mo)&&mo>0)c.months=mo;
+  save();
+  var msg=document.getElementById('gc-msg');
+  if(!c.calId||!c.apiKey){msg.style.color='#c62828';msg.textContent='カレンダーIDとAPIキーを入力してください';return;}
+  msg.style.color='#888';msg.textContent='読み込み中...';
+  document.getElementById('gc-list').innerHTML='';
+  var tmin=new Date(TODAY); tmin.setDate(tmin.getDate()-7);
+  var tmax=new Date(TODAY); tmax.setMonth(tmax.getMonth()+c.months);
+  var url='https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(c.calId)+'/events'
+    +'?key='+encodeURIComponent(c.apiKey)
+    +'&timeMin='+tmin.toISOString()
+    +'&timeMax='+tmax.toISOString()
+    +'&singleEvents=true&orderBy=startTime&maxResults=250';
+  fetch(url).then(function(r){
+    if(!r.ok)return r.json().then(function(j){throw new Error((j.error&&j.error.message)||('HTTP '+r.status));});
+    return r.json();
+  }).then(function(j){
+    gcalItems=(j.items||[]).map(gcalConv).filter(function(x){return !!x;});
+    if(!gcalItems.length){msg.style.color='#888';msg.textContent='予定が見つかりませんでした';return;}
+    msg.style.color='#2e7d32';msg.textContent=gcalItems.length+'件見つかりました。取り込むものを選んでください。';
+    gcalRender();
+  }).catch(function(e){
+    msg.style.color='#c62828';
+    msg.textContent='読み込めませんでした: '+e.message;
+  });
+}
+
+function gcalConv(it){
+  if(!it.start)return null;
+  var date=it.start.date||(it.start.dateTime||'').slice(0,10);
+  if(!date)return null;
+  var st=it.start.dateTime?it.start.dateTime.slice(11,16):'';
+  var en=(it.end&&it.end.dateTime)?it.end.dateTime.slice(11,16):'';
+  var title=(it.summary||'(無題)').trim();
+  var type=/試合|大会|カップ|TRM|フェス/.test(title)?'試合':'練習';
+  return {gid:it.id,date:date,title:title,type:type,place:(it.location||'').trim(),start:st,end:en};
+}
+
+function gcalMatch(t){
+  var kws=gcalCfg().kw.split(',').map(function(s){return s.trim();}).filter(Boolean);
+  if(!kws.length)return true;
+  for(var i=0;i<kws.length;i++)if(t.indexOf(kws[i])>=0)return true;
+  return false;
+}
+
+function gcalRender(){
+  var el=document.getElementById('gc-list');
+  var s='<div style="margin:10px 0 4px;display:flex;gap:6px">';
+  s+='<button class="addbtn" id="gc-all" style="margin:0;font-size:12px;padding:5px 10px">すべて選択</button>';
+  s+='<button class="addbtn" id="gc-none" style="margin:0;font-size:12px;padding:5px 10px">すべて解除</button></div>';
+  for(var i=0;i<gcalItems.length;i++){
+    var x=gcalItems[i];
+    var dup=D.events.some(function(e){return e.gid===x.gid;});
+    var chk=gcalMatch(x.title)&&!dup;
+    s+='<div class="gcal-row"><input type="checkbox" class="gcal-cb" data-i="'+i+'"'+(chk?' checked':'')+'>';
+    s+='<div class="gcal-info"><div class="gcal-ttl">'+esc(x.title)+(dup?'<span class="gcal-dup">取込済</span>':'')+'</div>';
+    s+='<div class="gcal-meta">'+fdsp(x.date)+(x.start?' '+x.start:'')+(x.end?'〜'+x.end:'')+(x.place?' | '+esc(x.place):'')+'</div></div></div>';
+  }
+  s+='<button class="modal-btn" id="gc-import" style="margin-top:10px">選んだ予定を取り込む</button>';
+  el.innerHTML=s;
+  document.getElementById('gc-all').onclick=function(){el.querySelectorAll('.gcal-cb').forEach(function(c){c.checked=true;});};
+  document.getElementById('gc-none').onclick=function(){el.querySelectorAll('.gcal-cb').forEach(function(c){c.checked=false;});};
+  document.getElementById('gc-import').onclick=gcalImport;
+}
+
+function gcalImport(){
+  var cbs=document.querySelectorAll('.gcal-cb:checked');
+  if(!cbs.length){showToast('取り込む予定を選んでください');return;}
+  var add=0,upd=0;
+  for(var i=0;i<cbs.length;i++){
+    var x=gcalItems[parseInt(cbs[i].getAttribute('data-i'),10)];
+    var ex=null;
+    for(var j=0;j<D.events.length;j++)if(D.events[j].gid===x.gid){ex=D.events[j];break;}
+    if(ex){
+      ex.date=x.date;ex.title=x.title;ex.type=x.type;ex.place=x.place;ex.start=x.start;ex.end=x.end;upd++;
+    }else{
+      D.events.push({id:'g'+Date.now()+'_'+i,gid:x.gid,date:x.date,title:x.title,type:x.type,place:x.place,start:x.start,end:x.end,dl:''});
+      add++;
+    }
+  }
+  save();closeModal();
+  showToast('新規'+add+'件 / 更新'+upd+'件を取り込みました');
+  var d=new Date(TODAY);CY=d.getFullYear();CM=d.getMonth();
+  drawAdmin();drawCal();
 }
 
 function openEvEditModal(eid){
@@ -694,6 +962,8 @@ function openEvEditModal(eid){
   mhtml+='<label class="flbl">タイトル</label><input type="text" class="finp" id="ev-edit-title" value="'+esc(ev.title)+'" style="margin-bottom:6px">';
   mhtml+='<label class="flbl">場所</label><input type="text" class="finp" id="ev-edit-place" value="'+esc(ev.place||'')+'" style="margin-bottom:6px">';
   mhtml+='<label class="flbl">時間</label><div class="g2"><input type="time" class="finp" id="ev-edit-start" value="'+esc(ev.start||'')+'"><input type="time" class="finp" id="ev-edit-end" value="'+esc(ev.end||'')+'"></div>';
+  mhtml+='<label class="flbl">入力期限（空欄なら開催の'+dlDays()+'日前 = '+fdsp(addDays(ev.date,-dlDays()))+'）</label>';
+  mhtml+='<input type="date" class="finp" id="ev-edit-dl" value="'+esc(ev.dl||'')+'" style="margin-bottom:6px">';
   mhtml+='<button class="modal-btn" id="ev-edit-save">保存する</button>';
   mhtml+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>';
   openModal(mhtml);
@@ -706,7 +976,8 @@ function openEvEditModal(eid){
     ev.place=document.getElementById('ev-edit-place').value.trim();
     ev.start=document.getElementById('ev-edit-start').value;
     ev.end=document.getElementById('ev-edit-end').value;
-    save();closeModal();showToast('保存しました');drawCal();
+    ev.dl=document.getElementById('ev-edit-dl').value||'';
+    save();closeModal();showToast('保存しました');drawCal();drawAdmin();
   };
 }
 
@@ -714,8 +985,7 @@ function drawDuty(){
   var dsel=document.getElementById('dsel');var dlist=document.getElementById('dlist');
   if(!dsel||!dlist)return;
   var eid=dsel.value;var att=D.att[eid]||{};
-  var duties=[];var av=Object.values(att);
-  for(var i=0;i<av.length;i++)if(av[i].duty&&av[i].pname)duties.push(av[i].pname);
+  var duties=dutyList(att);
   var html='';
   if(duties.length)html='<div class="dutybox" style="margin-bottom:8px"><div class="dutybox-t">当番</div><div class="dutybox-n">'+esc(duties.join('・'))+'</div></div>';
   var players=D.members.filter(function(m){return m.type==='player';});
@@ -736,7 +1006,7 @@ function drawDuty(){
       btn.onclick=function(){
         var eid2=btn.getAttribute('data-eid');var mid2=btn.getAttribute('data-mid');var pname=btn.getAttribute('data-pname');
         var a2=getA(eid2,mid2);a2.duty=!a2.duty;a2.pname=pname;
-        save();drawDuty();
+        save();drawDuty();drawCal();
       };
     })(dtgls[i]);
   }
@@ -781,11 +1051,18 @@ function drawMlist(){
   for(var i=0;i<delBtns.length;i++){
     (function(btn){
       btn.onclick=function(){
-        if(!confirm('削除しますか？'))return;
+        if(!confirm('削除しますか？\n（過去の当番は履歴として残ります）'))return;
         var mid2=btn.getAttribute('data-mid');
+        // 退団前に当番の表示名を履歴として保存
+        var snap='';
+        for(var j=0;j<D.members.length;j++)if(D.members[j].id===mid2){snap=D.members[j].parent||D.members[j].name;break;}
+        for(var eid in D.att){
+          var a=D.att[eid][mid2];
+          if(a&&a.duty&&!a.pname)a.pname=snap;
+        }
         D.members=D.members.filter(function(m){return m.id!==mid2;});
         D.users=D.users.filter(function(u){return u.mid!==mid2;});
-        save();drawMlist();showToast('削除しました');
+        save();drawAdmin();showToast('削除しました');
       };
     })(delBtns[i]);
   }
@@ -827,12 +1104,12 @@ function drawMlist(){
         mhtml+='<label class="flbl">'+(isPlayer?'選手名':'コーチ名')+'</label>';
         mhtml+='<input type="text" class="finp" id="edit-name" value="'+esc(m.name)+'" style="margin-bottom:6px">';
         if(isPlayer){
-          mhtml+='<label class="flbl">保護者名</label>';
-          mhtml+='<input type="text" class="finp" id="edit-parent" value="'+esc(m.parent||'')+'" placeholder="山田 お母さん" style="margin-bottom:6px">';
-          if(u){
-            mhtml+='<label class="flbl">ログイン表示名</label>';
-            mhtml+='<input type="text" class="finp" id="edit-uname" value="'+esc(u.name)+'" style="margin-bottom:6px">';
-          }
+          mhtml+='<label class="flbl">保護者名（当番表示に使われます）</label>';
+          mhtml+='<input type="text" class="finp" id="edit-parent" value="'+esc(m.parent||'')+'" placeholder="山田家（太郎）" style="margin-bottom:6px">';
+        }
+        if(u){
+          mhtml+='<label class="flbl">ログイン表示名</label>';
+          mhtml+='<input type="text" class="finp" id="edit-uname" value="'+esc(u.name)+'" style="margin-bottom:6px">';
         }
         mhtml+='<button class="modal-btn" id="edit-save-btn">保存する</button>';
         mhtml+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>';
@@ -840,16 +1117,21 @@ function drawMlist(){
         document.getElementById('edit-save-btn').onclick=function(){
           var newName=document.getElementById('edit-name').value.trim();
           if(!newName){showToast('名前を入力してください');return;}
+          var oldParent=m.parent||'';
           m.name=newName;
           if(isPlayer){
             var newParent=document.getElementById('edit-parent').value.trim();
             m.parent=newParent;
-            if(u){
-              var newUname=document.getElementById('edit-uname').value.trim();
-              if(newUname)u.name=newUname;
-            }
           }
-          save();closeModal();drawMlist();showToast('保存しました');
+          if(u){
+            var uEl=document.getElementById('edit-uname');
+            var newUname=uEl?uEl.value.trim():'';
+            if(newUname&&newUname!==oldParent)u.name=newUname;
+            else if(isPlayer&&newParent)u.name=newParent;
+            else if(!isPlayer)u.name=newName;
+          }
+          if(ME&&u&&ME.id===u.id){ME=u;document.getElementById('hname').textContent=u.name;}
+          save();closeModal();drawAdmin();showToast('保存しました');
         };
       };
     })(editBtns[i]);
@@ -860,6 +1142,15 @@ function drawMlist(){
 initEvents();
 load();
 updateHeader();
+// 予定のある直近の月を開く
+(function(){
+  if(!D.events.length)return;
+  var ts=fmtD(TODAY);
+  var future=D.events.filter(function(e){return e.date>=ts;}).sort(function(a,b){return a.date<b.date?-1:1;});
+  var target=future.length?future[0]:D.events.slice().sort(function(a,b){return a.date<b.date?1:-1;})[0];
+  var d=new Date(target.date+'T00:00:00');
+  CY=d.getFullYear();CM=d.getMonth();
+})();
 goCalendar();
 </script>
 </body>
