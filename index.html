@@ -183,7 +183,8 @@ function esc(s){return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 function peekA(eid,mid){var e=D.att[eid];return (e&&e[mid])?e[mid]:{ans:null,note:'',care:null,duty:false};}
 function getA(eid,mid){if(!D.att[eid])D.att[eid]={};if(!D.att[eid][mid])D.att[eid][mid]={ans:null,note:'',care:null,duty:false,pname:''};return D.att[eid][mid];}
 
-function save(){try{localStorage.setItem('sc8',JSON.stringify(D));}catch(e){}}
+function saveLocal(){try{localStorage.setItem('sc8',JSON.stringify(D));}catch(e){}}
+function save(){saveLocal();if(window.CloudSync)window.CloudSync.push();}
 function load(){
   try{
     var s=localStorage.getItem('sc8');
@@ -195,6 +196,8 @@ function load(){
       if(p.members)D.members=p.members;
       if(p.events)D.events=p.events;
       if(p.att)D.att=p.att;
+      if(typeof p.dlDays==='number')D.dlDays=p.dlDays;
+      if(p.gcal)D.gcal=p.gcal;
     }
   }catch(e){}
 }
@@ -1214,6 +1217,23 @@ function drawMlist(){
   }
 }
 
+
+// クラウドから更新が届いたときの再描画（入力中・モーダル表示中は待つ）
+function refreshView(){
+  var busy=!document.getElementById('modal-bg').classList.contains('hidden');
+  var ae=document.activeElement;
+  if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))busy=true;
+  if(busy){clearTimeout(refreshView.t);refreshView.t=setTimeout(refreshView,2000);return;}
+  if(ME){
+    var u=null;for(var i=0;i<D.users.length;i++)if(D.users[i].id===ME.id){u=D.users[i];break;}
+    if(!u){doLogout();return;}
+    ME=u;
+  }
+  updateHeader();
+  var cur=['sc','sd','si','sa','sl'].filter(function(id){return document.getElementById(id).style.display==='block';})[0];
+  if(cur==='sc')drawCal();else if(cur==='sd')drawDetail();else if(cur==='si')drawInput();else if(cur==='sa')drawAdmin();
+}
+
 // ===== 起動 =====
 initEvents();
 load();
@@ -1228,6 +1248,146 @@ updateHeader();
   CY=d.getFullYear();CM=d.getMonth();
 })();
 goCalendar();
+</script>
+<script type="module">
+// ===== Firebase (Firestore) 連携 =====
+// Firebaseコンソールの「プロジェクトの設定 > マイアプリ(Web)」の値を貼り付けてください。
+// apiKey が空のあいだはクラウド同期せず、従来どおり端末内(localStorage)だけで動きます。
+var FIREBASE_CONFIG={
+  apiKey:"",
+  authDomain:"",
+  projectId:"",
+  storageBucket:"",
+  messagingSenderId:"",
+  appId:""
+};
+
+if(FIREBASE_CONFIG.apiKey){
+  var V="10.14.1",B="https://www.gstatic.com/firebasejs/"+V+"/";
+  var A=await import(B+"firebase-app.js");
+  var F=await import(B+"firebase-firestore.js");
+  var db=F.initializeFirestore(A.initializeApp(FIREBASE_CONFIG),{localCache:F.persistentLocalCache()});
+  var D=function(){return window.D;};
+  var synced={};      // 最後にクラウドと一致していた内容（差分検出用）
+  var syncedAtt={};   // eid -> {mid: json}
+  var ready=false;    // 初回同期が済むまで書き込まない（古い端末データでクラウドを上書きしない）
+  var arrived={meta:false,att:false},metaExists=false,cloudAtt={};
+  var j=function(x){return JSON.stringify(x===undefined?null:x);};
+  var clean=function(x){return JSON.parse(j(x));};
+
+  // 全体データ → クラウド上の文書(チャンク)
+  var chunks=function(){
+    var d=D();
+    return {
+      meta:{appTitle:d.appTitle||'',dlDays:(typeof d.dlDays==='number')?d.dlDays:1,gcal:d.gcal||null},
+      logo:{data:d.appLogo||''},
+      users:{list:d.users},
+      members:{list:d.members},
+      events:{list:d.events}
+    };
+  };
+  var applyChunk={
+    meta:function(o){var d=D();d.appTitle=o.appTitle||d.appTitle;if(typeof o.dlDays==='number')d.dlDays=o.dlDays;if(o.gcal)d.gcal=o.gcal;},
+    logo:function(o){D().appLogo=o.data||'';},
+    users:function(o){D().users=o.list||[];},
+    members:function(o){D().members=o.list||[];},
+    events:function(o){D().events=o.list||[];}
+  };
+
+  var push=function(){
+    if(!ready)return;
+    var d=D(),c=chunks();
+    Object.keys(c).forEach(function(k){
+      var v=clean(c[k]),sv=j(v);
+      if(synced[k]===sv)return;
+      var prev=synced[k];synced[k]=sv;
+      F.setDoc(F.doc(db,'team',k),v).catch(function(e){synced[k]=prev;console.error('sync',k,e);});
+    });
+    // 出欠: イベントごとの文書に、本人(mid)のフィールドだけを書く（同時入力で上書きし合わない）
+    var live={};
+    Object.keys(d.att||{}).forEach(function(eid){
+      live[eid]=1;
+      var cur=d.att[eid]||{},sy=syncedAtt[eid]||(syncedAtt[eid]={}),upd={},touched=false;
+      Object.keys(cur).forEach(function(mid){
+        var v=clean(cur[mid]),sv=j(v);
+        if(sy[mid]!==sv){upd[mid]=v;touched=true;}
+      });
+      Object.keys(sy).forEach(function(mid){if(!(mid in cur)){upd[mid]=F.deleteField();touched=true;}});
+      if(!touched)return;
+      var snapshot={};Object.keys(upd).forEach(function(m){snapshot[m]=(m in cur)?j(clean(cur[m])):undefined;});
+      Object.keys(snapshot).forEach(function(m){if(snapshot[m]===undefined)delete sy[m];else sy[m]=snapshot[m];});
+      F.setDoc(F.doc(db,'att',eid),upd,{merge:true}).catch(function(e){
+        Object.keys(upd).forEach(function(m){delete sy[m];});console.error('sync att',eid,e);
+      });
+    });
+    Object.keys(syncedAtt).forEach(function(eid){
+      if(live[eid])return;
+      delete syncedAtt[eid];
+      F.deleteDoc(F.doc(db,'att',eid)).catch(function(e){console.error('sync att del',eid,e);});
+    });
+  };
+
+  var changed=function(){window.saveLocal();window.refreshView();};
+
+  // meta と att の初回内容が揃ったら同期開始
+  var tryReady=function(){
+    if(ready||!arrived.meta||!arrived.att)return;
+    ready=true;
+    var d=D();
+    if(metaExists){
+      // クラウドが正: 出欠はクラウドの内容で置き換える
+      d.att={};syncedAtt={};
+      Object.keys(cloudAtt).forEach(function(eid){
+        d.att[eid]=clean(cloudAtt[eid]);
+        syncedAtt[eid]={};Object.keys(cloudAtt[eid]).forEach(function(m){syncedAtt[eid][m]=j(cloudAtt[eid][m]);});
+      });
+      changed();
+    }
+    push();   // クラウドが空なら、この端末のデータを初期データとして登録
+  };
+
+  Object.keys(applyChunk).forEach(function(k){
+    F.onSnapshot(F.doc(db,'team',k),function(snap){
+      if(k==='meta'&&!arrived.meta&&(snap.exists()||!snap.metadata.fromCache)){
+        arrived.meta=true;metaExists=snap.exists();
+      }
+      if(!snap.exists()){tryReady();return;}
+      if(snap.metadata.hasPendingWrites)return;   // 自分の書き込みの反映は無視
+      var o=snap.data(),sv=j(o);
+      if(synced[k]!==sv){synced[k]=sv;applyChunk[k](o);changed();}
+      tryReady();
+    },function(e){console.error('listen',k,e);});
+  });
+
+  F.onSnapshot(F.collection(db,'att'),function(qs){
+    var any=false,d=D();
+    if(!arrived.att&&(qs.size>0||!qs.metadata.fromCache))arrived.att=true;
+    qs.docChanges().forEach(function(ch){
+      var eid=ch.doc.id;
+      if(!ready){   // 初回同期前: クラウドの内容を控えるだけ
+        if(ch.type==='removed')delete cloudAtt[eid];else cloudAtt[eid]=ch.doc.data();
+        return;
+      }
+      if(ch.doc.metadata.hasPendingWrites)return;
+      if(ch.type==='removed'){
+        if(d.att[eid]){delete d.att[eid];any=true;}
+        delete syncedAtt[eid];return;
+      }
+      var o=ch.doc.data(),sy=syncedAtt[eid]||(syncedAtt[eid]={});
+      var cur=d.att[eid]||(d.att[eid]={});
+      Object.keys(o).forEach(function(mid){
+        var sv=j(o[mid]);
+        if(sy[mid]===sv)return;
+        sy[mid]=sv;cur[mid]=o[mid];any=true;
+      });
+      Object.keys(sy).forEach(function(mid){if(!(mid in o)){delete sy[mid];if(cur[mid]){delete cur[mid];any=true;}}});
+    });
+    if(any)changed();
+    tryReady();
+  },function(e){console.error('listen att',e);});
+
+  window.CloudSync={push:push};
+}
 </script>
 </body>
 </html>

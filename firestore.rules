@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 注意: ログイン機能(Firebase Auth)を使っていないため、Webアプリから読み書きできるよう開けています。
+    // URLとAPIキーを知っている人は誰でも読み書きできます。チーム外に公開しないでください。
+    match /team/{doc} { allow read, write: if true; }
+    match /att/{eid}  { allow read, write: if true; }
+  }
+}
