@@ -100,6 +100,32 @@ body{font-family:sans-serif;background:#f0f2f5;font-size:14px}
 .reqmsg.bad{color:#c62828}
 .offbadge{display:inline-block;margin-left:6px;font-size:10px;font-weight:normal;color:#8d6e63;background:#efebe9;border-radius:4px;padding:2px 6px;vertical-align:middle}
 .icobtn[disabled]{opacity:.3;pointer-events:none}
+.modesw{display:flex;gap:6px;margin:0 0 10px}
+.modebtn{flex:1;padding:9px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:13px;cursor:pointer;color:#666}
+.modebtn.on{background:#1b5e20;border-color:#1b5e20;color:#fff;font-weight:bold}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 10px;margin-bottom:8px;background:#f3f5f2;border-radius:8px;font-size:12px;color:#666}
+.legend b{margin-right:3px;font-size:14px}
+.lg-ok{color:#2e7d32}.lg-ng{color:#c62828}.lg-my{color:#ef6c00}.lg-lt{color:#3949ab}
+.crow{background:#fff;border-radius:10px;padding:9px 10px;margin-bottom:7px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.crow.over{box-shadow:0 0 0 1px #ef6c00}
+.chead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px;margin-bottom:5px}
+.cwhen{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;min-width:0}
+.chead b{font-size:14px}
+.cgame{font-size:10px;background:#fce4ec;color:#ad1457;border-radius:4px;padding:1px 5px;font-weight:bold}
+.cmeta{font-size:11px;color:#999}
+.abtnrow.mini{gap:5px}
+.abtnrow.mini .abtn{padding:6px 2px;gap:0}
+.abtnrow.mini .amk{font-size:16px;line-height:1.2}
+.abtnrow.mini .alb{display:none}
+.ntarea.mini{margin-top:6px;min-height:32px;font-size:13px;padding:5px 8px}
+.cduty{display:flex;align-items:center;gap:5px;flex:none}
+.cduty .abtnrow{gap:4px}
+.cduty .abtn{padding:3px 0;width:38px;flex:none}
+.cduty .amk{font-size:13px}
+.clbl{font-size:10px;color:#8a8a8a;font-weight:bold;flex:none;width:24px;text-align:center}
+.cans{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.cans>.abtnrow{flex:1;min-width:0}
+.cans>.ntarea,.cans>.reqmsg{flex-basis:100%}
 .ntarea{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-top:6px;font-family:sans-serif;resize:vertical}
 /* 管理 */
 .acard{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
@@ -649,6 +675,16 @@ function optBtn(set,eid,mid,v,cur,type){
 function ansBtn(eid,mid,v,cur){return optBtn(ANS,eid,mid,v,cur,'ans');}
 function careBtn(eid,mid,v,cur){return optBtn(CARE,eid,mid,v,cur,'care');}
 
+var inputMode=(function(){
+  try{var v=localStorage.getItem('sc8_inputmode');if(v==='detail'||v==='simple')return v;}catch(e){}
+  return 'simple';
+})();
+function setInputMode(m){
+  inputMode=m;
+  try{localStorage.setItem('sc8_inputmode',m);}catch(e){}
+  drawInput();window.scrollTo(0,0);
+}
+
 function drawInput(){
   var body=document.getElementById('si');
   if(!ME){body.innerHTML='<div class="noev">ログインしてください</div>';return;}
@@ -664,7 +700,45 @@ function drawInput(){
   var isParent=ME.role==='parent';
   var evs=future.concat(showPast?past:[]);
   var html=remindBanner();
+  // 表示モードの切り替え（まとめて入力 / くわしく）
+  html+='<div class="modesw">';
+  html+='<button class="modebtn'+(inputMode==='simple'?' on':'')+'" id="mode-simple">まとめて入力</button>';
+  html+='<button class="modebtn'+(inputMode==='detail'?' on':'')+'" id="mode-detail">くわしく</button>';
+  html+='</div>';
   if(!future.length)html+='<div class="noev" style="padding:1rem">今後の予定はありません</div>';
+
+  if(inputMode==='simple'){
+    html+='<div class="legend"><span><b class="lg-ok">○</b>参加</span><span><b class="lg-ng">×</b>休み</span>'
+        + '<span><b class="lg-my">△</b>未定</span><span><b class="lg-lt">◐</b>遅刻早退</span></div>';
+    for(var i=0;i<evs.length;i++){
+      var ev=evs[i];var a=peekA(ev.id,mid);
+      if(i===future.length)html+='<div class="slbl" style="margin-top:16px">過去の予定</div>';
+      var dlv=evDeadline(ev),over=(dlv<fmtD(TODAY)&&ev.date>=fmtD(TODAY));
+      html+='<div class="crow'+(over?' over':'')+'">';
+      html+='<div class="chead"><div class="cwhen"><b>'+fdsp(ev.date)+'</b>'+(ev.type==='試合'?'<span class="cgame">試合</span>':'')
+          + '<span class="cmeta">'+(ev.start?esc(ev.start):'')+(ev.place?' '+esc(ev.place):'')+'</span></div>';
+      if(isParent){
+        html+='<div class="isec cduty"><span class="clbl">当番</span><div class="abtnrow mini">';
+        html+=careBtn(ev.id,mid,'ok',a.care)+careBtn(ev.id,mid,'ng',a.care)+careBtn(ev.id,mid,'maybe',a.care);
+        html+='</div></div>';
+      }
+      html+='</div>';
+      html+='<div class="isec cans"><span class="clbl">出欠</span><div class="abtnrow mini">';
+      html+=ansBtn(ev.id,mid,'ok',a.ans)+ansBtn(ev.id,mid,'ng',a.ans)+ansBtn(ev.id,mid,'maybe',a.ans)+ansBtn(ev.id,mid,'late',a.ans);
+      html+='</div>';
+      var nn=(a.ans==='late');
+      html+='<textarea class="ntarea mini'+(nn?' req':'')+'" rows="1" placeholder="何時ごろになるかを書いてください" data-eid="'+ev.id+'" data-mid="'+mid+'"'+(nn?'':' hidden')+'>'+esc(a.note||'')+'</textarea>';
+      html+='<div class="reqmsg'+(nn&&!(a.note||'').trim()?' bad':'')+'"'+(nn?'':' hidden')+'>'
+           +(nn&&!(a.note||'').trim()?'※ 時間を必ず書いてください':'例: 15分ほど遅れます')+'</div>';
+      html+='</div>';
+      html+='</div>';
+    }
+    html+='<button class="addbtn" id="toggle-past" style="width:100%;margin-top:12px">'+(showPast?'過去の予定を隠す':'過去の予定も表示する（'+past.length+'件）')+'</button>';
+    body.innerHTML=html;
+    bindInput(body);
+    return;
+  }
+
   for(var i=0;i<evs.length;i++){
     var ev=evs[i];var a=peekA(ev.id,mid);
     if(i===future.length)html+='<div class="slbl" style="margin-top:16px">過去の予定</div>';
@@ -692,10 +766,18 @@ function drawInput(){
   }
   html+='<button class="addbtn" id="toggle-past" style="width:100%;margin-top:12px">'+(showPast?'過去の予定を隠す':'過去の予定も表示する（'+past.length+'件）')+'</button>';
   body.innerHTML=html;
+  bindInput(body);
+}
+
+// 入力画面のボタン類をつなぐ（まとめて入力・くわしくの両方で使う）
+function bindInput(body){
   bindRemind();
+  var ms=document.getElementById('mode-simple'),md=document.getElementById('mode-detail');
+  if(ms)ms.onclick=function(){setInputMode('simple');};
+  if(md)md.onclick=function(){setInputMode('detail');};
   var tp2=document.getElementById('toggle-past');
   if(tp2)tp2.onclick=function(){showPast=!showPast;drawInput();};
-  // ○×△
+  // ○×△◐
   var abtns=body.querySelectorAll('.abtn');
   for(var i=0;i<abtns.length;i++){
     (function(btn){
@@ -711,10 +793,11 @@ function drawInput(){
         }
         save();
         var row=btn.parentElement;var siblings=row.querySelectorAll('.abtn');
+        var mini=row.classList.contains('mini');
         for(var j=0;j<siblings.length;j++){
           var v=siblings[j].getAttribute('data-v');
           var set=(type==='ans')?ANS:CARE;
-          siblings[j].className='abtn'+(v===val?' '+set[v].cls:'');
+          siblings[j].className='abtn'+(mini?' mini':'')+(v===val?' '+set[v].cls:'');
         }
         if(type==='ans'){
           var sec=btn.closest('.isec');
@@ -750,19 +833,22 @@ function drawInput(){
 function noteReq(tx,on){
   var msg=tx.parentElement.querySelector('.reqmsg');
   if(!msg)return;
+  var mini=tx.classList.contains('mini');
   if(!on){
-    tx.classList.remove('req');tx.placeholder='備考（任意）';
+    tx.classList.remove('req');
+    if(mini){tx.hidden=true;}else{tx.placeholder='備考（任意）';}
     msg.hidden=true;msg.classList.remove('bad');
     return;
   }
-  tx.classList.add('req');tx.placeholder='何時ごろになるかを書いてください';
+  tx.classList.add('req');tx.hidden=false;
+  tx.placeholder='何時ごろになるかを書いてください';
   msg.hidden=false;
   if(tx.value.trim()){
     msg.classList.remove('bad');
-    msg.textContent='例: 15分ほど遅れます / 15:00に早退します';
+    msg.textContent=mini?'例: 15分ほど遅れます':'例: 15分ほど遅れます / 15:00に早退します';
   }else{
     msg.classList.add('bad');
-    msg.textContent='※ 遅刻・早退のときは、備考に時間を必ず書いてください';
+    msg.textContent=mini?'※ 時間を必ず書いてください':'※ 遅刻・早退のときは、備考に時間を必ず書いてください';
   }
 }
 
