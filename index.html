@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<title>チーム出欠管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:sans-serif;background:#f0f2f5;font-size:14px}
+.wrap{max-width:480px;margin:0 auto;padding:8px 8px 80px}
+/* ヘッダー */
+.hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 4px 8px}
+.hdr-left{display:flex;align-items:center;gap:8px}
+.hdr-logo{width:36px;height:36px;border-radius:50%;object-fit:cover;display:none}
+.hdr-logo.show{display:block}
+.hdr-logo-emoji{font-size:28px;line-height:1}
+.hdr-title{font-size:16px;font-weight:bold}
+.hdr-right{font-size:12px;color:#666;display:flex;align-items:center;gap:6px}
+.hbtn{font-size:12px;padding:4px 10px;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer}
+/* タブ */
+.tabs{display:flex;gap:4px;background:#ddd;border-radius:12px;padding:4px;margin-bottom:12px}
+.tbtn{flex:1;padding:8px 4px;border:none;background:transparent;border-radius:8px;font-size:13px;color:#666;cursor:pointer}
+.tbtn.on{background:#fff;color:#111;font-weight:bold;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+/* カード */
+.card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+/* カレンダー */
+.cal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.cal-nav{width:34px;height:34px;border:1px solid #ddd;border-radius:8px;background:#fff;font-size:20px;cursor:pointer}
+.cal-ym{font-size:16px;font-weight:bold}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.dow{font-size:11px;color:#888;padding:4px 0}
+.cday{min-height:44px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 1px;border-radius:8px;cursor:pointer;font-size:13px}
+.cday.emp{pointer-events:none}
+.cday.tod .dnum{background:#378ADD;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.cday.sel{background:#ddeeff}
+.cday.sun{color:#c0392b}.cday.sat{color:#2471a3}
+.cdot{width:6px;height:6px;border-radius:50%;display:inline-block;margin:0 1px}
+.dot-b{background:#378ADD}.dot-r{background:#e91e63}
+/* イベントカード */
+.ecard{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);border-left:4px solid #378ADD}
+.ecard.sel{border-left-color:#2471a3;background:#f0f7ff}
+.emeta{font-size:11px;color:#888;margin-bottom:2px}
+.etitle{font-size:15px;font-weight:bold;margin-bottom:5px}
+.etype-badge{font-size:10px;padding:1px 7px;border-radius:5px;margin-right:5px;font-weight:bold}
+.et-practice{background:#e3f0fc;color:#1a5f9e}
+.et-game{background:#fce4ec;color:#880e4f}
+.et-other{background:#f3e5f5;color:#6a1b9a}
+.esum{font-size:12px;display:flex;gap:8px;flex-wrap:wrap}
+.duty-bar{margin-top:5px;font-size:11px;background:#fce4ec;color:#880e4f;display:inline-block;padding:2px 8px;border-radius:6px;font-weight:bold}
+/* 詳細 */
+.back{background:none;border:none;color:#378ADD;font-size:14px;cursor:pointer;padding:0 0 10px;display:block}
+.slbl{font-size:11px;font-weight:bold;color:#888;margin:12px 0 5px;letter-spacing:.05em}
+.mcard{background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.mcard.duty-hl{background:#fce4ec;border-left:4px solid #e91e63}
+.mtop{display:flex;align-items:center;gap:8px}
+.mname{font-size:14px;font-weight:bold;flex:1}
+.dbadge{font-size:10px;background:#e91e63;color:#fff;padding:1px 6px;border-radius:4px;margin-left:4px}
+.ntoggle{background:none;border:none;font-size:11px;color:#378ADD;cursor:pointer}
+.mnote{font-size:12px;color:#555;margin-top:6px;padding-top:6px;border-top:1px solid #eee;display:none}
+.mnote.open{display:block}
+.dutybox{background:#fce4ec;border-left:4px solid #e91e63;border-radius:10px;padding:10px 14px;margin-bottom:10px}
+.dutybox-t{font-size:11px;font-weight:bold;color:#880e4f;margin-bottom:3px}
+.dutybox-n{font-size:15px;font-weight:bold;color:#4a0030}
+/* ログイン */
+.login-box{background:#fff;border-radius:16px;padding:24px 20px;box-shadow:0 2px 8px rgba(0,0,0,.12);margin-top:12px}
+.login-ttl{font-size:16px;font-weight:bold;text-align:center;margin-bottom:14px}
+.nlist{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:240px;overflow-y:auto}
+.nitem{padding:10px 14px;border:1px solid #ddd;border-radius:8px;background:#f8f8f8;font-size:14px;cursor:pointer;text-align:left;width:100%}
+.nitem.on{background:#378ADD;color:#fff;border-color:#378ADD}
+.pinarea{margin-top:10px}
+.pinlbl{font-size:12px;color:#888;margin-bottom:5px}
+.pininp{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:20px;letter-spacing:8px;text-align:center}
+.loginbtn{width:100%;margin-top:10px;padding:12px;background:#378ADD;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer}
+.loginerr{color:#c62828;font-size:13px;text-align:center;margin-top:6px;min-height:18px}
+/* 入力 */
+.icard{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.ittl{font-size:15px;font-weight:bold;margin-bottom:3px}
+.imeta{font-size:12px;color:#888;margin-bottom:10px}
+.isec{margin-bottom:12px}
+.ilbl{font-size:12px;font-weight:bold;color:#444;margin-bottom:5px}
+.abtnrow{display:flex;gap:6px}
+.abtn{flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:#f8f8f8;font-size:17px;cursor:pointer;text-align:center}
+.abtn.ok{background:#e8f5e9;border-color:#4caf50;font-weight:bold}
+.abtn.ng{background:#ffebee;border-color:#ef5350;font-weight:bold}
+.abtn.my{background:#fff8e1;border-color:#ffb300;font-weight:bold}
+.ntarea{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-top:6px;font-family:sans-serif;resize:vertical}
+/* 管理 */
+.acard{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.acard h3{font-size:14px;font-weight:bold;margin-bottom:10px}
+.flbl{font-size:12px;color:#888;margin-bottom:3px;display:block;margin-top:6px}
+.finp{width:100%;padding:9px 10px;border:1px solid #ccc;border-radius:8px;font-size:14px;background:#fff}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.addbtn{padding:9px 16px;background:#f0f0f0;border:1px solid #ccc;border-radius:8px;font-size:13px;cursor:pointer;font-weight:bold;margin-top:8px}
+.addbtn.primary{background:#378ADD;color:#fff;border-color:#378ADD}
+.cbrow{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.cblbl{display:flex;align-items:center;gap:3px;font-size:13px;cursor:pointer}
+.mli{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0}
+.mli:last-child{border-bottom:none}
+.mli-info{flex:1}
+.mli-btns{display:flex;gap:4px}
+.icobtn{background:none;border:1px solid #ddd;border-radius:6px;color:#555;cursor:pointer;font-size:12px;padding:3px 8px}
+.icobtn.del{color:#c62828;border-color:#f5c6c6}
+.carerow{background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.06);display:flex;align-items:center;gap:8px}
+.carename{flex:1;font-size:14px;font-weight:bold}
+.dtgl{padding:5px 12px;font-size:12px;border-radius:6px;border:1px solid #ccc;background:#f8f8f8;cursor:pointer;font-weight:bold}
+.dtgl.on{background:#e91e63;color:#fff;border-color:#e91e63}
+/* モーダル */
+.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+.modal-bg.hidden{display:none}
+.modal{background:#fff;border-radius:16px 16px 0 0;padding:20px 16px 40px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-ttl{font-size:16px;font-weight:bold;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1}
+.modal-btn{width:100%;padding:12px;background:#378ADD;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer;margin-top:10px}
+.modal-btn.del{background:#c62828}
+.modal-btn.gray{background:#888}
+/* PIN変更 */
+.pin-change-box{background:#f8f8f8;border-radius:10px;padding:12px;margin-top:12px}
+.pin-change-ttl{font-size:12px;font-weight:bold;color:#555;margin-bottom:8px}
+/* 共通 */
+.remind{background:#FFF4E5;border:1px solid #FFCC80;border-left:4px solid #EF6C00;border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.remind-t{font-size:13px;font-weight:bold;color:#994800;margin-bottom:6px}
+.remind-r{font-size:13px;color:#5D3200;padding:2px 0}
+.remind-m{font-size:11px;background:#FFE0B2;color:#994800;padding:1px 6px;border-radius:4px;margin-left:4px}
+.remind-b{margin-top:8px;padding:8px 18px;background:#EF6C00;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:bold;cursor:pointer}
+.gcal-row{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-bottom:1px solid #f0f0f0}
+.gcal-row:last-child{border-bottom:none}
+.gcal-cb{margin-top:3px;width:18px;height:18px;flex-shrink:0}
+.gcal-info{flex:1;min-width:0}
+.gcal-ttl{font-size:13px;font-weight:bold}
+.gcal-meta{font-size:11px;color:#888;margin-top:1px}
+.gcal-dup{font-size:10px;background:#E3F2FD;color:#1565C0;padding:1px 6px;border-radius:4px;margin-left:4px}
+.noev{text-align:center;padding:3rem 1rem;color:#aaa;font-size:14px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 22px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+.sep{height:1px;background:#f0f0f0;margin:10px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-left">
+      <img class="hdr-logo" id="hdr-logo-img">
+      <span class="hdr-logo-emoji" id="hdr-logo-emoji">&#9917;</span>
+      <span class="hdr-title" id="hdr-title-text">チーム出欠管理</span>
+    </div>
+    <div class="hdr-right">
+      <span id="hname">未ログイン</span>
+      <button class="hbtn" id="hset" style="display:none">&#9881;</button>
+      <button class="hbtn" id="hbtn">ログイン</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tbtn on" id="tc">カレンダー</button>
+    <button class="tbtn" id="ti" style="display:none">入力</button>
+    <button class="tbtn" id="ta" style="display:none">管理</button>
+  </div>
+  <div id="sc"></div>
+  <div id="sd" style="display:none"></div>
+  <div id="si" style="display:none"></div>
+  <div id="sa" style="display:none"></div>
+  <div id="sl" style="display:none"></div>
+</div>
+<!-- モーダル -->
+<div class="modal-bg hidden" id="modal-bg">
+  <div class="modal" id="modal-body"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var DAYS=['日','月','火','水','木','金','土'];
+var TODAY=new Date();
+var CY=TODAY.getFullYear(),CM=TODAY.getMonth();
+var selEid=null,selDate=null,ME=null,selUid=null,showPast=false,dutyEid=null;
+
+var D={"appTitle":"チーム 出欠管理","appLogo":"","users":[{"id":"ua","name":"管理者","role":"admin","pin":""}],"members":[],"events":[],"att":{}};
+function initEvents(){}
+
+function fmtD(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());}
+function p2(n){return n<10?'0'+n:''+n;}
+function fdspY(ds){var d=new Date(ds+'T00:00:00');return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';}
+function fdsp(ds){var d=new Date(ds+'T00:00:00');return (d.getMonth()+1)+'月'+d.getDate()+'日('+DAYS[d.getDay()]+')'; }
+function esc(s){return (''+s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function peekA(eid,mid){var e=D.att[eid];return (e&&e[mid])?e[mid]:{ans:null,note:'',care:null,duty:false};}
+function getA(eid,mid){if(!D.att[eid])D.att[eid]={};if(!D.att[eid][mid])D.att[eid][mid]={ans:null,note:'',care:null,duty:false,pname:''};return D.att[eid][mid];}
+
+function saveLocal(){try{localStorage.setItem('sc8',JSON.stringify(D));}catch(e){}}
+function save(){saveLocal();if(window.CloudSync)window.CloudSync.push();}
+function load(){
+  try{
+    var s=localStorage.getItem('sc8');
+    if(s){
+      var p=JSON.parse(s);
+      if(p.appTitle)D.appTitle=p.appTitle;
+      if(p.appLogo)D.appLogo=p.appLogo;
+      if(p.users)D.users=p.users;
+      if(p.members)D.members=p.members;
+      if(p.events)D.events=p.events;
+      if(p.att)D.att=p.att;
+      if(typeof p.dlDays==='number')D.dlDays=p.dlDays;
+      if(p.gcal)D.gcal=p.gcal;
+    }
+  }catch(e){}
+}
+
+
+// 当番名をマスタから取得（退団者は履歴として att の pname を使う）
+function dutyName(mid,a){
+  for(var i=0;i<D.members.length;i++){
+    if(D.members[i].id===mid)return D.members[i].parent||D.members[i].name;
+  }
+  return (a&&a.pname)?a.pname:'';
+}
+function dutyList(att){
+  var r=[];
+  for(var k in att){ if(att[k]&&att[k].duty){ var nm=dutyName(k,att[k]); if(nm)r.push(nm); } }
+  return r;
+}
+// 選手のみの出欠集計
+function tally(att){
+  var t={ok:0,ng:0,my:0,no:0};
+  for(var i=0;i<D.members.length;i++){
+    var m=D.members[i];
+    if(m.type!=='player')continue;
+    var a=att[m.id];
+    if(!a||!a.ans)t.no++;
+    else if(a.ans==='ok')t.ok++;
+    else if(a.ans==='ng')t.ng++;
+    else t.my++;
+  }
+  return t;
+}
+// コーチのみの出欠集計
+function tallyCoach(att){
+  var t={ok:0,ng:0,my:0,no:0};
+  for(var i=0;i<D.members.length;i++){
+    var m=D.members[i];
+    if(m.type!=='coach')continue;
+    var a=att[m.id];
+    if(!a||!a.ans)t.no++;
+    else if(a.ans==='ok')t.ok++;
+    else if(a.ans==='ng')t.ng++;
+    else t.my++;
+  }
+  return t;
+}
+
+
+// ===== 入力期限 =====
+function dlDays(){ return (typeof D.dlDays==='number')?D.dlDays:1; }
+function addDays(ds,n){
+  var d=new Date(ds+'T00:00:00'); d.setDate(d.getDate()+n); return fmtD(d);
+}
+// イベントの実効期限（未設定なら「開催のN日前」）
+function evDeadline(ev){ return ev.dl || addDays(ev.date, -dlDays()); }
+
+// ログイン中の本人の「期限切れ未入力」を集める
+function myOverdue(){
+  if(!ME||!ME.mid)return [];
+  var today=fmtD(TODAY), out=[];
+  for(var i=0;i<D.events.length;i++){
+    var ev=D.events[i];
+    if(ev.date<today)continue;              // 終わった予定は対象外
+    if(evDeadline(ev)>=today)continue;      // まだ期限内
+    var a=(D.att[ev.id]||{})[ME.mid];
+    var needAns=!a||!a.ans;
+    var needCare=(ME.role==='parent')&&(!a||!a.care);
+    if(needAns||needCare)out.push({ev:ev,ans:needAns,care:needCare});
+  }
+  out.sort(function(x,y){return x.ev.date<y.ev.date?-1:1;});
+  return out;
+}
+
+function remindBanner(){
+  var list=myOverdue();
+  if(!list.length)return '';
+  var s='<div class="remind"><div class="remind-t">&#9888; 入力期限を過ぎている予定があります（'+list.length+'件）</div>';
+  for(var i=0;i<list.length&&i<5;i++){
+    var r=list[i], miss=[];
+    if(r.ans)miss.push('出欠');
+    if(r.care)miss.push('看護当番');
+    s+='<div class="remind-r">'+fdsp(r.ev.date)+' '+esc(r.ev.title)+' <span class="remind-m">'+miss.join('・')+'が未入力</span></div>';
+  }
+  if(list.length>5)s+='<div class="remind-r">ほか'+(list.length-5)+'件</div>';
+  s+='<button class="remind-b" id="remind-go">入力する</button></div>';
+  return s;
+}
+function bindRemind(){
+  var b=document.getElementById('remind-go');
+  if(b)b.onclick=function(){goInput();};
+}
+
+function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(function(){t.className='toast';},2200);}
+
+function updateHeader(){
+  document.getElementById('hdr-title-text').textContent=D.appTitle||'チーム出欠管理';
+  document.title=D.appTitle||'チーム出欠管理';
+  var img=document.getElementById('hdr-logo-img');
+  var emoji=document.getElementById('hdr-logo-emoji');
+  if(D.appLogo){img.src=D.appLogo;img.className='hdr-logo show';emoji.style.display='none';}
+  else{img.className='hdr-logo';emoji.style.display='';}
+}
+
+// ===== モーダル =====
+function openModal(html){
+  document.getElementById('modal-body').innerHTML=html;
+  document.getElementById('modal-bg').className='modal-bg';
+}
+function closeModal(){document.getElementById('modal-bg').className='modal-bg hidden';}
+document.getElementById('modal-bg').onclick=function(e){if(e.target===this)closeModal();};
+
+// ===== 画面切り替え =====
+function show(scr){
+  ['sc','sd','si','sa','sl'].forEach(function(id){document.getElementById(id).style.display='none';});
+  document.getElementById(scr).style.display='block';
+  document.getElementById('tc').className='tbtn'+(scr==='sc'||scr==='sd'?' on':'');
+  document.getElementById('ti').className='tbtn'+(scr==='si'?' on':'');
+  document.getElementById('ta').className='tbtn'+(scr==='sa'?' on':'');
+}
+function goCalendar(){show('sc');drawCal();}
+function goDetail(){show('sd');drawDetail();}
+function goInput(){show('si');drawInput();}
+function goAdmin(){show('sa');drawAdmin();}
+function goLogin(){show('sl');drawLogin();}
+
+document.getElementById('hbtn').onclick=function(){ME?doLogout():goLogin();};
+document.getElementById('hset').onclick=function(){openSettingsModal();};
+document.getElementById('tc').onclick=goCalendar;
+document.getElementById('ti').onclick=goInput;
+document.getElementById('ta').onclick=goAdmin;
+
+function doLogout(){
+  ME=null;
+  document.getElementById('hname').textContent='未ログイン';
+  document.getElementById('hbtn').textContent='ログイン';
+  document.getElementById('hset').style.display='none';
+  document.getElementById('ti').style.display='none';
+  document.getElementById('ta').style.display='none';
+  goCalendar();showToast('ログアウトしました');
+}
+
+// ===== ログイン =====
+function drawLogin(){
+  var html='<div class="login-box"><div class="login-ttl">ログイン</div><div class="nlist">';
+  for(var i=0;i<D.users.length;i++){
+    var u=D.users[i];
+    html+='<button class="nitem" id="ni_'+u.id+'" data-uid="'+u.id+'">'+esc(u.name)+'</button>';
+  }
+  html+='</div><div class="pinarea" id="pinarea" style="display:none">';
+  html+='<div class="pinlbl" id="pinlbl">PINコードを入力（4桁）</div>';
+  html+='<input type="password" inputmode="numeric" maxlength="4" class="pininp" id="pinp">';
+  html+='<button class="loginbtn" id="loginbtn">ログイン</button>';
+  html+='<div class="loginerr" id="lerr"></div>';
+  html+='</div></div>';
+  document.getElementById('sl').innerHTML=html;
+  var btns=document.querySelectorAll('.nitem');
+  for(var j=0;j<btns.length;j++){
+    (function(btn){
+      btn.onclick=function(){
+        selUid=btn.getAttribute('data-uid');
+        for(var k=0;k<btns.length;k++)btns[k].className='nitem';
+        btn.className='nitem on';
+        document.getElementById('pinarea').style.display='block';
+        document.getElementById('pinp').value='';
+        document.getElementById('lerr').textContent='';
+        // PIN未設定の人は、初回ログインでその場で決めてもらう
+        var su=null;for(var m=0;m<D.users.length;m++)if(D.users[m].id===selUid){su=D.users[m];break;}
+        document.getElementById('pinlbl').textContent=(su&&!su.pin)
+          ?'はじめてのログインです。PINコードを決めてください（4桁）'
+          :'PINコードを入力（4桁）';
+        document.getElementById('loginbtn').textContent=(su&&!su.pin)?'このPINで登録':'ログイン';
+        document.getElementById('pinp').focus();
+      };
+    })(btns[j]);
+  }
+  document.getElementById('loginbtn').onclick=function(){
+    var pin=document.getElementById('pinp').value;
+    var found=null;
+    for(var i=0;i<D.users.length;i++){if(D.users[i].id===selUid){found=D.users[i];break;}}
+    if(!found){document.getElementById('lerr').textContent='名前を選んでください';return;}
+    if(!found.pin){
+      // 初回: 入力されたPINをこの人のPINとして登録する
+      if(!/^[0-9]{4}$/.test(pin)){document.getElementById('lerr').textContent='4桁の数字で入力してください';return;}
+      found.pin=pin;save();showToast('PINコードを登録しました');
+    }else if(found.pin!==pin){document.getElementById('lerr').textContent='PINコードが違います';return;}
+    ME=found;
+    document.getElementById('hname').textContent=found.name;
+    document.getElementById('hbtn').textContent='ログアウト';
+    document.getElementById('hset').style.display='';
+    document.getElementById('ti').style.display='';
+    if(found.role==='admin')document.getElementById('ta').style.display='';
+    goCalendar();showToast('ようこそ、'+found.name+'さん');
+  };
+}
+
+// ===== カレンダー =====
+function changeMonth(d){CM+=d;if(CM>11){CM=0;CY++;}if(CM<0){CM=11;CY--;}drawCal();}
+
+function typeBadge(type){
+  if(!type||type==='練習')return '<span class="etype-badge et-practice">練習</span>';
+  if(type==='試合'||type==='練習試合')return '<span class="etype-badge et-game">'+esc(type)+'</span>';
+  return '<span class="etype-badge et-other">'+esc(type)+'</span>';
+}
+
+function drawCal(){
+  var months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  var todayStr=fmtD(TODAY);
+  var html=remindBanner();
+  html+='<div class="card"><div class="cal-hdr">';
+  html+='<button class="cal-nav" id="cal-prev">&#8249;</button>';
+  html+='<span class="cal-ym">'+CY+'年 '+months[CM]+'</span>';
+  html+='<button class="cal-nav" id="cal-next">&#8250;</button>';
+  html+='</div><div class="cal-grid">';
+  var dc=['color:#c0392b','','','','','','color:#2471a3'];
+  for(var i=0;i<7;i++)html+='<div class="dow" style="'+dc[i]+'">'+DAYS[i]+'</div>';
+  var first=new Date(CY,CM,1).getDay();
+  var last=new Date(CY,CM+1,0).getDate();
+  for(var i=0;i<first;i++)html+='<div class="cday emp"></div>';
+  for(var d=1;d<=last;d++){
+    var ds=CY+'-'+p2(CM+1)+'-'+p2(d);
+    var dow=new Date(ds+'T00:00:00').getDay();
+    var evs=D.events.filter(function(e){return e.date===ds;});
+    var isSel=(ds===selDate)||evs.some(function(e){return e.id===selEid;});
+    var hasDuty=evs.some(function(ev){
+      var aa=D.att[ev.id]||{};
+      for(var k in aa)if(aa[k].duty)return true;
+      return false;
+    });
+    var cls='cday'+(new Date(ds+'T00:00:00').toDateString()===TODAY.toDateString()?' tod':'')+(isSel?' sel':'')+(dow===0?' sun':dow===6?' sat':'');
+    html+='<div class="'+cls+'" data-ds="'+ds+'"><span class="dnum">'+d+'</span>';
+    if(evs.length)html+='<div><span class="cdot dot-b"></span>'+(hasDuty?'<span class="cdot dot-r"></span>':'')+'</div>';
+    html+='</div>';
+  }
+  html+='</div></div>';
+  // イベント一覧
+  var evList=[];
+  for(var i=0;i<D.events.length;i++){
+    var ed=new Date(D.events[i].date+'T00:00:00');
+    if(ed.getFullYear()===CY&&ed.getMonth()===CM)evList.push(D.events[i]);
+  }
+  evList.sort(function(a,b){return a.date<b.date?-1:1;});
+  if(!evList.length){html+='<div class="noev">この月の予定はありません</div>';}
+  else{
+    for(var i=0;i<evList.length;i++){
+      var ev=evList[i];
+      var att=D.att[ev.id]||{};
+      var tp=tally(att),tcz=tallyCoach(att);
+      var duties=dutyList(att);
+      html+='<div class="ecard'+((ev.id===selEid||ev.date===selDate)?' sel':'')+'" data-eid="'+ev.id+'" data-date="'+ev.date+'">';
+      html+='<div class="emeta">'+fdsp(ev.date)+(ev.start?' '+ev.start:'')+(ev.end?' 〜 '+ev.end:'')+(ev.place?' | '+esc(ev.place):'')+'</div>';
+      html+='<div class="etitle">'+typeBadge(ev.type)+esc(ev.title)+'</div>';
+      html+='<div class="esum"><span style="color:#888;min-width:34px">選手</span>';
+      if(tp.ok)html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span>';
+      if(tp.my)html+='<span style="color:#f57f17"><b>△</b>'+tp.my+'</span>';
+      if(tp.ng)html+='<span style="color:#c62828"><b>×</b>'+tp.ng+'</span>';
+      if(tp.no)html+='<span style="color:#bbb">未'+tp.no+'</span>';
+      html+='</div>';
+      html+='<div class="esum"><span style="color:#888;min-width:34px">コーチ</span>';
+      if(tcz.ok)html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span>';
+      if(tcz.my)html+='<span style="color:#f57f17"><b>△</b>'+tcz.my+'</span>';
+      if(tcz.ng)html+='<span style="color:#c62828"><b>×</b>'+tcz.ng+'</span>';
+      if(tcz.no)html+='<span style="color:#bbb">未'+tcz.no+'</span>';
+      html+='</div>';
+      if(duties.length)html+='<div><span class="duty-bar">当番: '+esc(duties.join('・'))+'</span></div>';
+      if(ME&&ME.role==='admin'){
+        html+='<div style="font-size:11px;color:#aaa;margin-top:4px">入力期限: '+fdsp(evDeadline(ev))+(ev.dl?'':'（自動）')+'</div>';
+        html+='<div style="display:flex;gap:6px;margin-top:8px;border-top:1px solid #f0f0f0;padding-top:8px">';
+        html+='<button class="icobtn ev-edit-btn" data-eid="'+ev.id+'" style="font-size:12px;padding:4px 12px">編集</button>';
+        html+='<button class="icobtn del ev-del-btn" data-eid="'+ev.id+'" style="font-size:12px;padding:4px 12px">削除</button>';
+        html+='</div>';
+      }
+      html+='</div>';
+    }
+  }
+  document.getElementById('sc').innerHTML=html;
+  bindRemind();
+  document.getElementById('cal-prev').onclick=function(){changeMonth(-1);};
+  document.getElementById('cal-next').onclick=function(){changeMonth(1);};
+  var cdays=document.querySelectorAll('.cday:not(.emp)');
+  for(var i=0;i<cdays.length;i++){
+    (function(el){
+      el.onclick=function(){
+        var ds=el.getAttribute('data-ds');
+        var hits=D.events.filter(function(e){return e.date===ds;});
+        if(!hits.length)return;
+        selDate=ds;
+        selEid=(hits.length===1)?hits[0].id:null;
+        drawCal();
+        var first=document.querySelector('.ecard[data-date="'+ds+'"]');
+        if(first)first.scrollIntoView({block:'center'});
+      };
+    })(cdays[i]);
+  }
+  var ecards=document.querySelectorAll('.ecard');
+  for(var i=0;i<ecards.length;i++){
+    (function(el){
+      el.onclick=function(e){
+        if(e.target.classList.contains('ev-edit-btn')||e.target.classList.contains('ev-del-btn'))return;
+        selEid=el.getAttribute('data-eid');goDetail();
+      };
+    })(ecards[i]);
+  }
+  // イベント編集ボタン
+  var editEvBtns=document.querySelectorAll('.ev-edit-btn');
+  for(var i=0;i<editEvBtns.length;i++){
+    (function(btn){
+      btn.onclick=function(e){e.stopPropagation();openEvEditModal(btn.getAttribute('data-eid'));};
+    })(editEvBtns[i]);
+  }
+  // イベント削除ボタン
+  var delEvBtns=document.querySelectorAll('.ev-del-btn');
+  for(var i=0;i<delEvBtns.length;i++){
+    (function(btn){
+      btn.onclick=function(e){
+        e.stopPropagation();
+        var eid=btn.getAttribute('data-eid');
+        var ev=null;for(var j=0;j<D.events.length;j++)if(D.events[j].id===eid){ev=D.events[j];break;}
+        if(!ev)return;
+        if(!confirm(fdsp(ev.date)+' '+ev.title+' を削除しますか？'))return;
+        D.events=D.events.filter(function(e){return e.id!==eid;});
+        save();showToast('削除しました');drawCal();
+      };
+    })(delEvBtns[i]);
+  }
+}
+
+// ===== 詳細 =====
+function drawDetail(){
+  if(!selEid){goCalendar();return;}
+  var ev=null;for(var i=0;i<D.events.length;i++)if(D.events[i].id===selEid){ev=D.events[i];break;}
+  if(!ev){goCalendar();return;}
+  var att=D.att[ev.id]||{};
+  var duties=dutyList(att);
+  var html='<button class="back" id="detback">&#8592; カレンダーに戻る</button>';
+  html+='<div class="card">';
+  html+='<div style="font-size:12px;color:#888;margin-bottom:4px">'+fdsp(ev.date)+(ev.start?' '+ev.start:'')+(ev.end?' 〜 '+ev.end:'')+'</div>';
+  html+='<div style="font-size:17px;font-weight:bold;margin-bottom:4px">'+typeBadge(ev.type)+esc(ev.title)+'</div>';
+  if(ev.place)html+='<div style="font-size:13px;color:#888">'+esc(ev.place)+'</div>';
+  html+='</div>';
+  if(duties.length)html+='<div class="dutybox"><div class="dutybox-t">看護当番</div><div class="dutybox-n">'+esc(duties.join('・'))+'</div></div>';
+  var tp=tally(att),tcz=tallyCoach(att);
+  html+='<div class="card" style="padding:10px 14px"><div class="esum" style="margin-bottom:2px"><span style="color:#888;min-width:34px">選手</span>';
+  html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span><span style="color:#f57f17"><b>△</b>'+tp.my+'</span><span style="color:#c62828"><b>×</b>'+tp.ng+'</span><span style="color:#bbb">未'+tp.no+'</span></div>';
+  html+='<div class="esum"><span style="color:#888;min-width:34px">コーチ</span>';
+  html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span><span style="color:#f57f17"><b>△</b>'+tcz.my+'</span><span style="color:#c62828"><b>×</b>'+tcz.ng+'</span><span style="color:#bbb">未'+tcz.no+'</span></div></div>';
+  function mkrow(m){
+    var a=att[m.id]||{};var ans=a.ans||null;
+    if(ans!=='ok'&&ans!=='maybe')return '';
+    var mark=ans==='ok'?'<span style="color:#2e7d32;font-size:18px">○</span>':'<span style="color:#f57f17;font-size:18px">△</span>';
+    var note=a.note||'';
+    var r='<div class="mcard"><div class="mtop">'+mark;
+    r+='<span class="mname">'+esc(m.name)+'</span>';
+    if(note)r+='<button class="ntoggle">&#9656; 備考</button>';
+    r+='</div>'+(note?'<div class="mnote">'+esc(note)+'</div>':'')+'</div>';
+    return r;
+  }
+  var players=D.members.filter(function(m){return m.type==='player';});
+  var coaches=D.members.filter(function(m){return m.type==='coach';});
+  var ph=players.map(mkrow).join('');
+  var ch=coaches.map(mkrow).join('');
+  if(ph)html+='<div class="slbl">選手</div>'+ph;
+  if(ch)html+='<div class="slbl">コーチ</div>'+ch;
+  if(!ph&&!ch)html+='<div class="noev">まだ入力がありません</div>';
+  document.getElementById('sd').innerHTML=html;
+  document.getElementById('detback').onclick=goCalendar;
+  var nbtns=document.querySelectorAll('.ntoggle');
+  for(var i=0;i<nbtns.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        var note=btn.parentElement.nextElementSibling;
+        if(!note)return;
+        if(note.className.indexOf('open')>=0){note.className='mnote';btn.innerHTML='&#9656; 備考';}
+        else{note.className='mnote open';btn.innerHTML='&#9662; 備考';}
+      };
+    })(nbtns[i]);
+  }
+}
+
+// ===== 入力 =====
+function drawInput(){
+  var body=document.getElementById('si');
+  if(!ME){body.innerHTML='<div class="noev">ログインしてください</div>';return;}
+  if(ME.role==='admin'){body.innerHTML='<div class="noev">管理者は「管理」タブを使ってください</div>';return;}
+  var mid=ME.mid;
+  var member=null;for(var i=0;i<D.members.length;i++)if(D.members[i].id===mid){member=D.members[i];break;}
+  if(!member){body.innerHTML='<div class="noev">メンバー情報が見つかりません</div>';return;}
+  var ts=fmtD(TODAY);
+  var all=D.events.slice().sort(function(a,b){return a.date<b.date?-1:1;});
+  var future=all.filter(function(e){return e.date>=ts;});
+  var past=all.filter(function(e){return e.date<ts;}).reverse();
+  if(!all.length){body.innerHTML='<div class="noev">予定がありません</div>';return;}
+  var isParent=ME.role==='parent';
+  var evs=future.concat(showPast?past:[]);
+  var html=remindBanner();
+  if(!future.length)html+='<div class="noev" style="padding:1rem">今後の予定はありません</div>';
+  for(var i=0;i<evs.length;i++){
+    var ev=evs[i];var a=peekA(ev.id,mid);
+    if(i===future.length)html+='<div class="slbl" style="margin-top:16px">過去の予定</div>';
+    html+='<div class="icard">';
+    html+='<div class="ittl">'+typeBadge(ev.type)+esc(ev.title)+'</div>';
+    html+='<div class="imeta">'+fdsp(ev.date)+(ev.start?' '+ev.start:'')+(ev.end?' 〜 '+ev.end:'')+(ev.place?' | '+esc(ev.place):'')+'</div>';
+    var dlv=evDeadline(ev),over=(dlv<fmtD(TODAY)&&ev.date>=fmtD(TODAY));
+    html+='<div class="imeta" style="margin-top:-6px;'+(over?'color:#EF6C00;font-weight:bold':'')+'">入力期限: '+fdsp(dlv)+(over?'（期限切れ）':'')+'</div>';
+    html+='<div class="isec"><div class="ilbl">'+esc(member.name)+'の出欠</div>';
+    html+='<div class="abtnrow">';
+    html+='<button class="abtn'+(a.ans==='ok'?' ok':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ok" data-t="ans">○</button>';
+    html+='<button class="abtn'+(a.ans==='ng'?' ng':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ng" data-t="ans">×</button>';
+    html+='<button class="abtn'+(a.ans==='maybe'?' my':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="maybe" data-t="ans">△</button>';
+    html+='</div>';
+    html+='<textarea class="ntarea" rows="2" placeholder="備考（任意）" data-eid="'+ev.id+'" data-mid="'+mid+'">'+esc(a.note||'')+'</textarea></div>';
+    if(isParent){
+      html+='<div class="isec"><div class="ilbl">看護当番の可否</div>';
+      html+='<div class="abtnrow">';
+      html+='<button class="abtn'+(a.care==='ok'?' ok':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ok" data-t="care">○</button>';
+      html+='<button class="abtn'+(a.care==='ng'?' ng':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ng" data-t="care">×</button>';
+      html+='<button class="abtn'+(a.care==='maybe'?' my':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="maybe" data-t="care">△</button>';
+      html+='</div></div>';
+    }
+    html+='</div>';
+  }
+  html+='<button class="addbtn" id="toggle-past" style="width:100%;margin-top:12px">'+(showPast?'過去の予定を隠す':'過去の予定も表示する（'+past.length+'件）')+'</button>';
+  body.innerHTML=html;
+  bindRemind();
+  var tp2=document.getElementById('toggle-past');
+  if(tp2)tp2.onclick=function(){showPast=!showPast;drawInput();};
+  // ○×△
+  var abtns=body.querySelectorAll('.abtn');
+  for(var i=0;i<abtns.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        var eid=btn.getAttribute('data-eid');var mid2=btn.getAttribute('data-mid');
+        var val=btn.getAttribute('data-v');var type=btn.getAttribute('data-t');
+        var a2=getA(eid,mid2);
+        if(type==='ans')a2.ans=val;
+        else{
+          a2.care=val;
+          var m2=null;for(var j=0;j<D.members.length;j++)if(D.members[j].id===mid2){m2=D.members[j];break;}
+          if(m2)a2.pname=m2.parent||m2.name;
+        }
+        save();
+        var row=btn.parentElement;var siblings=row.querySelectorAll('.abtn');
+        for(var j=0;j<siblings.length;j++){
+          var v=siblings[j].getAttribute('data-v');
+          siblings[j].className='abtn'+(v===val?(val==='ok'?' ok':val==='ng'?' ng':' my'):'');
+        }
+        showToast('保存しました');
+      };
+    })(abtns[i]);
+  }
+  // 備考
+  var txts=body.querySelectorAll('.ntarea');
+  for(var i=0;i<txts.length;i++){
+    (function(tx){
+      tx.onchange=function(){getA(tx.getAttribute('data-eid'),tx.getAttribute('data-mid')).note=tx.value;save();};
+    })(txts[i]);
+  }
+}
+
+// ===== 管理 =====
+function drawAdmin(){
+  var body=document.getElementById('sa');
+  if(!ME||ME.role!=='admin'){body.innerHTML='<div class="noev">管理者のみアクセスできます</div>';return;}
+  var evsSorted=D.events.slice().sort(function(a,b){return a.date<b.date?-1:1;});
+  // 当番選定
+  var html='';
+  html+='<div class="acard"><h3>看護当番の選定</h3>';
+  if(evsSorted.length){
+    var ts=fmtD(TODAY);
+    var defId=null;
+    for(var i=0;i<evsSorted.length;i++){if(evsSorted[i].date>=ts){defId=evsSorted[i].id;break;}}
+    if(!defId)defId=evsSorted[evsSorted.length-1].id;
+    if(dutyEid){for(var i=0;i<evsSorted.length;i++)if(evsSorted[i].id===dutyEid){defId=dutyEid;break;}}
+    html+='<select class="finp" id="dsel">';
+    for(var i=0;i<evsSorted.length;i++)html+='<option value="'+evsSorted[i].id+'"'+(evsSorted[i].id===defId?' selected':'')+'>'+fdsp(evsSorted[i].date)+' '+esc(evsSorted[i].title)+(evsSorted[i].place?' @'+esc(evsSorted[i].place):'')+'</option>';
+    html+='</select><div id="dlist" style="margin-top:8px"></div>';
+  }else html+='<div style="color:#aaa;font-size:13px">予定がありません</div>';
+  html+='</div>';
+  // データの書き出し／読み込み
+  html+='<div class="acard"><h3>データの書き出し・読み込み</h3>';
+  html+='<div style="font-size:12px;color:#888;margin-bottom:8px">名簿や出欠をまとめてファイルに保存できます。初回の名簿登録や、万一データが消えたときの復元に使います。</div>';
+  html+='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
+  html+='<button class="addbtn" id="dx-out">書き出す（JSON）</button>';
+  html+='<button class="addbtn" id="dx-pick">読み込む（JSON）</button>';
+  html+='<input type="file" accept="application/json,.json" id="dx-file" style="display:none">';
+  html+='</div>';
+  html+='<div class="sep"></div>';
+  html+='<div style="font-size:12px;color:#888;margin-bottom:8px">PINコードを全員ぶん未設定に戻します。次に各自がログインするとき、自分でPINを決め直してもらう形になります。</div>';
+  html+='<button class="addbtn" id="dx-pinreset">全員のPINを未設定に戻す</button>';
+  html+='</div>';
+  // 入力期限をまとめて設定
+  html+='<div class="acard"><h3>入力期限をまとめて設定</h3>';
+  html+='<div style="font-size:12px;color:#888;margin-bottom:8px">「◯日までに入力」と案内した日を、対象期間の予定にまとめて設定します。</div>';
+  html+='<label class="flbl">対象の予定（開催日で絞る）</label>';
+  html+='<div class="g2"><input type="date" class="finp" id="mdl-from" value="'+fmtD(TODAY)+'"><input type="date" class="finp" id="mdl-to" value="'+dlDefTo()+'"></div>';
+  html+='<label class="flbl">入力期限</label><input type="date" class="finp" id="mdl-date">';
+  html+='<div id="mdl-info" style="font-size:12px;color:#888;margin-top:8px"></div>';
+  html+='<div style="display:flex;gap:6px"><button class="addbtn primary" id="mdl-apply">まとめて設定</button>';
+  html+='<button class="addbtn" id="mdl-clear">期限を自動に戻す</button></div></div>';
+  // Googleカレンダー取り込み
+  html+='<div class="acard"><h3>Googleカレンダーから取り込み</h3>';
+  html+='<div style="font-size:12px;color:#888;margin-bottom:8px">松丘FCの公開カレンダーを読み込んで、必要な予定だけ選んで登録します。</div>';
+  html+='<button class="addbtn primary" id="gcal-open" style="margin-top:0">カレンダーを開く</button></div>';
+  // イベント追加
+  html+='<div class="acard"><h3>イベントを追加</h3>';
+  html+='<div class="g2"><div><label class="flbl">日付</label><input type="date" class="finp" id="nd"></div>';
+  html+='<div><label class="flbl">種別</label><input type="text" class="finp" id="ntype" placeholder="練習"></div></div>';
+  html+='<label class="flbl">タイトル</label><input type="text" class="finp" id="nt" placeholder="土曜練習" style="margin-bottom:6px">';
+  html+='<label class="flbl">場所</label><input type="text" class="finp" id="np" placeholder="〇〇公園" style="margin-bottom:6px">';
+  html+='<label class="flbl">時間</label><div class="g2"><input type="time" class="finp" id="ns"><input type="time" class="finp" id="ne"></div>';
+  html+='<label class="flbl">入力期限（空欄なら開催の'+dlDays()+'日前）</label><input type="date" class="finp" id="ndl">';
+  html+='<button class="addbtn primary" id="addev-btn">追加する</button></div>';
+  // コピー追加
+  html+='<div class="acard"><h3>既存イベントをコピーして追加</h3>';
+  if(evsSorted.length){
+    html+='<label class="flbl">コピー元</label><select class="finp" id="copy-src">';
+    for(var i=0;i<evsSorted.length;i++)html+='<option value="'+evsSorted[i].id+'">'+fdsp(evsSorted[i].date)+' '+esc(evsSorted[i].title)+'</option>';
+    html+='</select>';
+    html+='<label class="flbl">追加する日付</label><input type="date" class="finp" id="copy-date" style="margin-bottom:6px">';
+    html+='<button class="addbtn primary" id="copy-btn">コピーして追加</button>';
+  }else html+='<div style="color:#aaa;font-size:13px">コピー元になるイベントがありません</div>';
+  html+='</div>';
+  // 一括追加
+  html+='<div class="acard"><h3>一括追加（繰り返し）</h3>';
+  html+='<label class="flbl">期間</label><div class="g2"><input type="date" class="finp" id="bs"><input type="date" class="finp" id="be"></div>';
+  html+='<label class="flbl">曜日</label><div class="cbrow">';
+  for(var i=0;i<DAYS.length;i++)html+='<label class="cblbl"><input type="checkbox" class="dcb" value="'+i+'"> '+DAYS[i]+'</label>';
+  html+='</div>';
+  html+='<div class="g2"><div><label class="flbl">種別</label><input type="text" class="finp" id="btype" placeholder="練習"></div>';
+  html+='<div><label class="flbl">タイトル</label><input type="text" class="finp" id="bt" placeholder="定期練習"></div></div>';
+  html+='<label class="flbl">時間</label><div class="g2"><input type="time" class="finp" id="bst"><input type="time" class="finp" id="ben"></div>';
+  html+='<label class="flbl">入力期限（空欄なら開催の'+dlDays()+'日前）</label><input type="date" class="finp" id="bdl">';
+  html+='<button class="addbtn primary" id="bulk-btn">一括追加する</button></div>';
+  // メンバー管理
+  html+='<div class="acard"><h3>メンバー管理</h3>';
+  html+='<div class="g2"><div><label class="flbl">選手名</label><input type="text" class="finp" id="mnp" placeholder="山田 太郎"></div>';
+  html+='<div><label class="flbl">保護者名</label><input type="text" class="finp" id="mpp" placeholder="山田家（太郎）"></div></div>';
+  html+='<label class="flbl">保護者PIN（4桁）</label><input type="text" class="finp" id="mpin" maxlength="4" placeholder="1234" style="margin-bottom:6px">';
+  html+='<button class="addbtn primary" id="add-player-btn">選手を追加</button>';
+  html+='<div class="sep"></div>';
+  html+='<label class="flbl">コーチ名</label>';
+  html+='<div style="display:flex;gap:6px"><input type="text" class="finp" id="mcn" placeholder="コーチ名" style="flex:1"><input type="text" class="finp" id="mcpin" maxlength="4" placeholder="PIN" style="width:70px"></div>';
+  html+='<button class="addbtn primary" id="add-coach-btn" style="margin-top:6px">コーチを追加</button>';
+  html+='<div id="mlist" style="margin-top:12px"></div></div>';
+  body.innerHTML=html;
+  // データの書き出し・読み込み
+  document.getElementById('dx-out').onclick=function(){
+    var blob=new Blob([JSON.stringify(D,null,1)],{type:'application/json'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='shukketsu_'+fmtD(new Date())+'.json';
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000);
+    showToast('書き出しました');
+  };
+  document.getElementById('dx-pick').onclick=function(){document.getElementById('dx-file').click();};
+  document.getElementById('dx-pinreset').onclick=function(){
+    if(!confirm('全員のPINコードを未設定に戻します。\n各自が次回ログインするときに、自分でPINを決め直すことになります。\nよろしいですか？'))return;
+    for(var i=0;i<D.users.length;i++)D.users[i].pin='';
+    save();showToast('全員のPINを未設定に戻しました');
+    doLogout();
+  };
+  document.getElementById('dx-file').onchange=function(){
+    var f=this.files&&this.files[0];if(!f)return;
+    this.value='';
+    var r=new FileReader();
+    r.onload=function(){
+      var p;
+      try{p=JSON.parse(r.result);}catch(e){showToast('ファイルを読めませんでした');return;}
+      if(!p||!p.users||!p.members){showToast('名簿が入っていないファイルです');return;}
+      if(!confirm('いまのデータを、このファイルの内容で置き換えます。\nユーザー'+p.users.length+'人 / メンバー'+p.members.length+'人 / 予定'+((p.events||[]).length)+'件\nよろしいですか？'))return;
+      // 読み込むファイルにPINが入っていない人は、いま登録済みのPINを引き継ぐ
+      var oldPin={};for(var i=0;i<D.users.length;i++)oldPin[D.users[i].id]=D.users[i].pin||'';
+      D.users=p.users.map(function(u){if(!u.pin&&oldPin[u.id])u.pin=oldPin[u.id];return u;});
+      D.members=p.members;
+      if(p.events)D.events=p.events;
+      if(p.att)D.att=p.att;
+      if(p.appTitle)D.appTitle=p.appTitle;
+      if(p.appLogo!==undefined)D.appLogo=p.appLogo;
+      if(typeof p.dlDays==='number')D.dlDays=p.dlDays;
+      if(p.gcal)D.gcal=p.gcal;
+      save();
+      // 自分自身が名簿から消えた場合はログインし直す
+      var me=null;for(var i=0;i<D.users.length;i++)if(D.users[i].id===ME.id){me=D.users[i];break;}
+      if(!me){showToast('読み込みました。ログインし直してください');doLogout();return;}
+      ME=me;updateHeader();showToast('読み込みました');drawAdmin();
+    };
+    r.readAsText(f);
+  };
+  // 入力期限まとめ設定
+  function mdlTargets(){
+    var f=document.getElementById('mdl-from').value, t=document.getElementById('mdl-to').value;
+    if(!f||!t)return null;
+    if(f>t)return 'ERR';
+    return D.events.filter(function(e){return e.date>=f&&e.date<=t;});
+  }
+  function mdlRefresh(){
+    var el=document.getElementById('mdl-info');
+    var tg=mdlTargets();
+    if(tg==='ERR'){el.style.color='#c62828';el.textContent='開始日が終了日より後になっています';return;}
+    if(!tg){el.style.color='#888';el.textContent='対象期間を指定してください';return;}
+    el.style.color='#888';
+    el.textContent='対象: '+tg.length+'件'+(tg.length?'（'+fdsp(tg[0].date)+' 〜 '+fdsp(tg[tg.length-1].date)+'）':'');
+  }
+  ['mdl-from','mdl-to'].forEach(function(id){document.getElementById(id).onchange=mdlRefresh;});
+  mdlRefresh();
+  document.getElementById('mdl-apply').onclick=function(){
+    var tg=mdlTargets();
+    if(tg==='ERR'||!tg){showToast('対象期間を確認してください');return;}
+    if(!tg.length){showToast('対象の予定がありません');return;}
+    var dv=document.getElementById('mdl-date').value;
+    if(!dv){showToast('入力期限を指定してください');return;}
+    if(!confirm(tg.length+'件の入力期限を '+fdsp(dv)+' に設定します。よろしいですか？'))return;
+    for(var i=0;i<tg.length;i++)tg[i].dl=dv;
+    save();showToast(tg.length+'件に期限を設定しました');drawAdmin();drawCal();
+  };
+  document.getElementById('mdl-clear').onclick=function(){
+    var tg=mdlTargets();
+    if(tg==='ERR'||!tg||!tg.length){showToast('対象の予定がありません');return;}
+    if(!confirm(tg.length+'件の期限を自動（開催の'+dlDays()+'日前）に戻します。よろしいですか？'))return;
+    for(var i=0;i<tg.length;i++)tg[i].dl='';
+    save();showToast(tg.length+'件を自動に戻しました');drawAdmin();drawCal();
+  };
+  document.getElementById('gcal-open').onclick=openGcalModal;
+  // 当番選定
+  var dsel=document.getElementById('dsel');
+  if(dsel){dsel.onchange=function(){dutyEid=dsel.value;drawDuty();};dutyEid=dsel.value;drawDuty();}
+  // イベント追加
+  document.getElementById('addev-btn').onclick=function(){
+    var d=document.getElementById('nd').value;
+    var t=document.getElementById('nt').value.trim();
+    if(!d||!t){showToast('日付とタイトルを入力してください');return;}
+    D.events.push({id:'e'+Date.now(),date:d,title:t,type:document.getElementById('ntype').value.trim()||'練習',place:document.getElementById('np').value.trim(),start:document.getElementById('ns').value,end:document.getElementById('ne').value,dl:document.getElementById('ndl').value||''});
+    save();showToast('追加しました');
+    document.getElementById('nd').value='';document.getElementById('nt').value='';document.getElementById('np').value='';document.getElementById('ntype').value='';
+    drawAdmin();
+  };
+  // コピー追加
+  var copyBtn=document.getElementById('copy-btn');
+  if(copyBtn){
+    copyBtn.onclick=function(){
+      var srcId=document.getElementById('copy-src').value;
+      var destDate=document.getElementById('copy-date').value;
+      if(!destDate){showToast('追加する日付を入力してください');return;}
+      var src=null;for(var i=0;i<D.events.length;i++)if(D.events[i].id===srcId){src=D.events[i];break;}
+      if(!src){showToast('コピー元が見つかりません');return;}
+      D.events.push({id:'e'+Date.now(),date:destDate,title:src.title,type:src.type||'練習',place:src.place,start:src.start,end:src.end});
+      save();showToast('コピーして追加しました');document.getElementById('copy-date').value='';drawAdmin();
+    };
+  }
+  // 一括追加
+  document.getElementById('bulk-btn').onclick=function(){
+    var s=document.getElementById('bs').value,e=document.getElementById('be').value;
+    var t=document.getElementById('bt').value.trim()||'練習';
+    var type=document.getElementById('btype').value.trim()||'練習';
+    var st=document.getElementById('bst').value,en=document.getElementById('ben').value;
+    var bdlv=document.getElementById('bdl').value||'';
+    var days=[];var cbs=document.querySelectorAll('.dcb:checked');
+    for(var i=0;i<cbs.length;i++)days.push(parseInt(cbs[i].value));
+    if(!s||!e||!days.length){showToast('期間と曜日を選択してください');return;}
+    var d2=new Date(s+'T00:00:00'),ed=new Date(e+'T00:00:00'),cnt=0;
+    while(d2<=ed){
+      if(days.indexOf(d2.getDay())>=0){D.events.push({id:'e'+Date.now()+cnt,date:fmtD(d2),title:t,type:type,place:'',start:st,end:en,dl:bdlv});cnt++;}
+      d2.setDate(d2.getDate()+1);
+    }
+    save();showToast(cnt+'件追加しました');drawAdmin();
+  };
+  // 選手追加
+  document.getElementById('add-player-btn').onclick=function(){
+    var name=document.getElementById('mnp').value.trim();
+    var par=document.getElementById('mpp').value.trim();
+    var pin=document.getElementById('mpin').value.trim()||'0000';
+    if(!name){showToast('選手名を入力してください');return;}
+    if(!/^\d{4}$/.test(pin)){showToast('PINは4桁の数字で入力してください');return;}
+    var mid2='m'+Date.now();
+    D.members.push({id:mid2,type:'player',name:name,parent:par});
+    D.users.push({id:'u'+Date.now(),name:(par||name),role:'parent',mid:mid2,pin:pin});
+    save();showToast('追加しました');drawAdmin();
+  };
+  // コーチ追加
+  document.getElementById('add-coach-btn').onclick=function(){
+    var name=document.getElementById('mcn').value.trim();
+    var pin=document.getElementById('mcpin').value.trim()||'0000';
+    if(!name){showToast('コーチ名を入力してください');return;}
+    if(!/^\d{4}$/.test(pin)){showToast('PINは4桁の数字で入力してください');return;}
+    var mid2='m'+Date.now();
+    D.members.push({id:mid2,type:'coach',name:name});
+    D.users.push({id:'u'+Date.now(),name:name+'（コーチ）',role:'coach',mid:mid2,pin:pin});
+    save();showToast('追加しました');drawAdmin();
+  };
+  drawMlist();
+}
+
+
+function openSettingsModal(){
+  if(!ME)return;
+  var isAdmin=ME.role==='admin';
+  var mhtml='<div class="modal-ttl">'+(isAdmin?'アプリ設定':'PINコードの変更')+'<button class="modal-close" onclick="closeModal()">&#215;</button></div>';
+  if(isAdmin){
+    // 管理者：アプリ設定
+    mhtml+='<label class="flbl">タイトル</label>';
+    mhtml+='<input type="text" class="finp" id="app-title-inp" value="'+esc(D.appTitle||'')+'" placeholder="チーム出欠管理" style="margin-bottom:8px">';
+    mhtml+='<label class="flbl">既定の入力期限（開催の何日前）</label>';
+    mhtml+='<input type="number" min="0" max="30" class="finp" id="app-dl-days" value="'+dlDays()+'" style="margin-bottom:8px">';
+    mhtml+='<label class="flbl">ロゴ画像</label>';
+    mhtml+='<input type="file" accept="image/*" id="logo-file" style="font-size:13px;margin-top:4px;margin-bottom:8px">';
+    if(D.appLogo)mhtml+='<div style="margin-bottom:8px"><img src="'+D.appLogo+'" style="width:48px;height:48px;border-radius:50%;object-fit:cover;vertical-align:middle"> <button class="icobtn del" id="logo-del-btn">削除</button></div>';
+    mhtml+='<button class="modal-btn" id="app-save-btn">設定を保存</button>';
+    mhtml+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>';
+  } else {
+    // 一般ユーザー：PIN変更
+    mhtml+='<label class="flbl">現在のPIN</label>';
+    mhtml+='<input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-cur" placeholder="••••" style="font-size:20px;letter-spacing:6px;text-align:center;margin-bottom:6px">';
+    mhtml+='<label class="flbl">新しいPIN（4桁）</label>';
+    mhtml+='<input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-new" placeholder="••••" style="font-size:20px;letter-spacing:6px;text-align:center;margin-bottom:6px">';
+    mhtml+='<label class="flbl">新しいPIN（確認）</label>';
+    mhtml+='<input type="password" inputmode="numeric" maxlength="4" class="finp" id="pin-new2" placeholder="••••" style="font-size:20px;letter-spacing:6px;text-align:center;margin-bottom:6px">';
+    mhtml+='<div style="color:#c62828;font-size:13px;min-height:16px;margin-bottom:4px" id="pin-err"></div>';
+    mhtml+='<button class="modal-btn" id="pin-change-btn">PINを変更する</button>';
+    mhtml+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>';
+  }
+  openModal(mhtml);
+  if(isAdmin){
+    document.getElementById('app-save-btn').onclick=function(){
+      var t=document.getElementById('app-title-inp').value.trim();
+      if(t)D.appTitle=t;
+      var dd=parseInt(document.getElementById('app-dl-days').value,10);
+      if(!isNaN(dd)&&dd>=0)D.dlDays=dd;
+      save();updateHeader();showToast('設定を保存しました');closeModal();
+    };
+    var logoFile=document.getElementById('logo-file');
+    logoFile.onchange=function(){
+      var f=logoFile.files[0];if(!f)return;
+      var reader=new FileReader();
+      reader.onload=function(e){D.appLogo=e.target.result;save();updateHeader();showToast('ロゴを設定しました');closeModal();};
+      reader.readAsDataURL(f);
+    };
+    var logoDel=document.getElementById('logo-del-btn');
+    if(logoDel)logoDel.onclick=function(){D.appLogo='';save();updateHeader();showToast('ロゴを削除しました');closeModal();};
+  } else {
+    document.getElementById('pin-change-btn').onclick=function(){
+      var cur=document.getElementById('pin-cur').value;
+      var nw=document.getElementById('pin-new').value;
+      var nw2=document.getElementById('pin-new2').value;
+      var errEl=document.getElementById('pin-err');
+      if(cur!==ME.pin){errEl.textContent='現在のPINが違います';return;}
+      if(!/^\d{4}$/.test(nw)){errEl.textContent='新しいPINは4桁の数字で入力してください';return;}
+      if(nw!==nw2){errEl.textContent='新しいPINが一致しません';return;}
+      for(var i=0;i<D.users.length;i++)if(D.users[i].id===ME.id){D.users[i].pin=nw;ME.pin=nw;break;}
+      save();showToast('PINを変更しました');closeModal();
+    };
+  }
+}
+
+
+// ===== Googleカレンダー取り込み =====
+function gcalCfg(){
+  if(!D.gcal)D.gcal={calId:'allmatsugaokafc@gmail.com',apiKey:'',kw:'2年',months:3};
+  if(typeof D.gcal.months!=='number')D.gcal.months=3;
+  return D.gcal;
+}
+var gcalItems=[];
+
+function openGcalModal(){
+  var c=gcalCfg();
+  var m='<div class="modal-ttl">Googleカレンダーから取り込み<button class="modal-close" onclick="closeModal()">&#215;</button></div>';
+  m+='<label class="flbl">カレンダーID</label>';
+  m+='<input type="text" class="finp" id="gc-id" value="'+esc(c.calId)+'" placeholder="xxx@gmail.com" style="margin-bottom:6px">';
+  m+='<label class="flbl">APIキー</label>';
+  m+='<input type="text" class="finp" id="gc-key" value="'+esc(c.apiKey)+'" placeholder="AIza..." style="margin-bottom:6px">';
+  m+='<label class="flbl">取り込む期間</label>';
+  m+='<div class="g2"><input type="date" class="finp" id="gc-from" value="'+gcalDefFrom()+'"><input type="date" class="finp" id="gc-to" value="'+gcalDefTo()+'"></div>';
+  m+='<div style="display:flex;gap:6px;margin-bottom:8px">';
+  m+='<button class="addbtn gc-preset" data-m="1" style="margin:0;font-size:12px;padding:5px 10px">1ヶ月</button>';
+  m+='<button class="addbtn gc-preset" data-m="3" style="margin:0;font-size:12px;padding:5px 10px">3ヶ月</button>';
+  m+='<button class="addbtn gc-preset" data-m="6" style="margin:0;font-size:12px;padding:5px 10px">6ヶ月</button>';
+  m+='<button class="addbtn gc-preset" data-m="12" style="margin:0;font-size:12px;padding:5px 10px">1年</button></div>';
+  m+='<label class="flbl">絞り込み語（カンマ区切り／空欄なら全件チェック）</label>';
+  m+='<input type="text" class="finp" id="gc-kw" value="'+esc(c.kw)+'" placeholder="2年" style="margin-bottom:6px">';
+  m+='<label class="flbl">入力期限（取り込む予定すべてに設定／空欄なら自動）</label>';
+  m+='<input type="date" class="finp" id="gc-dl" style="margin-bottom:6px">';
+  m+='<button class="modal-btn" id="gc-fetch" style="margin-top:4px">カレンダーを読み込む</button>';
+  m+='<div id="gc-msg" style="font-size:13px;margin-top:8px;min-height:18px"></div>';
+  m+='<div id="gc-list"></div>';
+  m+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">閉じる</button>';
+  openModal(m);
+  document.getElementById('gc-fetch').onclick=gcalFetch;
+  var ps=document.querySelectorAll('.gc-preset');
+  for(var i=0;i<ps.length;i++){
+    (function(b){
+      b.onclick=function(){
+        var mo=parseInt(b.getAttribute('data-m'),10);
+        var f=new Date(TODAY), t=new Date(TODAY);
+        t.setMonth(t.getMonth()+mo);
+        document.getElementById('gc-from').value=fmtD(f);
+        document.getElementById('gc-to').value=fmtD(t);
+      };
+    })(ps[i]);
+  }
+}
+function dlDefTo(){var d=new Date(TODAY);d.setMonth(d.getMonth()+3);return fmtD(d);}
+function gcalDefFrom(){ return fmtD(TODAY); }
+function gcalDefTo(){ var d=new Date(TODAY); d.setMonth(d.getMonth()+3); return fmtD(d); }
+
+function gcalFetch(){
+  var c=gcalCfg();
+  c.calId=document.getElementById('gc-id').value.trim();
+  c.apiKey=document.getElementById('gc-key').value.trim();
+  c.kw=document.getElementById('gc-kw').value.trim();
+  save();
+  var msg=document.getElementById('gc-msg');
+  if(!c.calId||!c.apiKey){msg.style.color='#c62828';msg.textContent='カレンダーIDとAPIキーを入力してください';return;}
+  var from=document.getElementById('gc-from').value, to=document.getElementById('gc-to').value;
+  if(!from||!to){msg.style.color='#c62828';msg.textContent='取り込む期間を指定してください';return;}
+  if(from>to){msg.style.color='#c62828';msg.textContent='期間の開始日が終了日より後になっています';return;}
+  msg.style.color='#888';msg.textContent='読み込み中...';
+  document.getElementById('gc-list').innerHTML='';
+  var tmin=new Date(from+'T00:00:00');
+  var tmax=new Date(to+'T23:59:59');
+  var url='https://www.googleapis.com/calendar/v3/calendars/'+encodeURIComponent(c.calId)+'/events'
+    +'?key='+encodeURIComponent(c.apiKey)
+    +'&timeMin='+tmin.toISOString()
+    +'&timeMax='+tmax.toISOString()
+    +'&singleEvents=true&orderBy=startTime&maxResults=250';
+  fetch(url).then(function(r){
+    if(!r.ok)return r.json().then(function(j){throw new Error((j.error&&j.error.message)||('HTTP '+r.status));});
+    return r.json();
+  }).then(function(j){
+    gcalItems=(j.items||[]).map(gcalConv).filter(function(x){return !!x;});
+    if(!gcalItems.length){msg.style.color='#888';msg.textContent=fdspY(from)+'〜'+fdspY(to)+' に予定が見つかりませんでした';return;}
+    msg.style.color='#2e7d32';msg.textContent=fdspY(from)+'〜'+fdspY(to)+' で'+gcalItems.length+'件見つかりました。取り込むものを選んでください。';
+    gcalRender();
+  }).catch(function(e){
+    msg.style.color='#c62828';
+    msg.textContent='読み込めませんでした: '+e.message;
+  });
+}
+
+function gcalConv(it){
+  if(!it.start)return null;
+  var date=it.start.date||(it.start.dateTime||'').slice(0,10);
+  if(!date)return null;
+  var st=it.start.dateTime?it.start.dateTime.slice(11,16):'';
+  var en=(it.end&&it.end.dateTime)?it.end.dateTime.slice(11,16):'';
+  var title=(it.summary||'(無題)').trim();
+  var type=/試合|大会|カップ|TRM|フェス/.test(title)?'試合':'練習';
+  return {gid:it.id,date:date,title:title,type:type,place:(it.location||'').trim(),start:st,end:en};
+}
+
+function gcalMatch(t){
+  var kws=gcalCfg().kw.split(',').map(function(s){return s.trim();}).filter(Boolean);
+  if(!kws.length)return true;
+  for(var i=0;i<kws.length;i++)if(t.indexOf(kws[i])>=0)return true;
+  return false;
+}
+
+function gcalRender(){
+  var el=document.getElementById('gc-list');
+  var s='<div style="margin:10px 0 4px;display:flex;gap:6px">';
+  s+='<button class="addbtn" id="gc-all" style="margin:0;font-size:12px;padding:5px 10px">すべて選択</button>';
+  s+='<button class="addbtn" id="gc-none" style="margin:0;font-size:12px;padding:5px 10px">すべて解除</button></div>';
+  for(var i=0;i<gcalItems.length;i++){
+    var x=gcalItems[i];
+    var dup=D.events.some(function(e){return e.gid===x.gid;});
+    var chk=gcalMatch(x.title)&&!dup;
+    s+='<div class="gcal-row"><input type="checkbox" class="gcal-cb" data-i="'+i+'"'+(chk?' checked':'')+'>';
+    s+='<div class="gcal-info"><div class="gcal-ttl">'+esc(x.title)+(dup?'<span class="gcal-dup">取込済</span>':'')+'</div>';
+    var sameYear=(new Date(x.date+'T00:00:00')).getFullYear()===TODAY.getFullYear();
+    s+='<div class="gcal-meta">'+(sameYear?fdsp(x.date):fdspY(x.date))+(x.start?' '+x.start:'')+(x.end?'〜'+x.end:'')+(x.place?' | '+esc(x.place):'')+'</div></div></div>';
+  }
+  s+='<button class="modal-btn" id="gc-import" style="margin-top:10px">選んだ予定を取り込む</button>';
+  el.innerHTML=s;
+  document.getElementById('gc-all').onclick=function(){el.querySelectorAll('.gcal-cb').forEach(function(c){c.checked=true;});};
+  document.getElementById('gc-none').onclick=function(){el.querySelectorAll('.gcal-cb').forEach(function(c){c.checked=false;});};
+  document.getElementById('gc-import').onclick=gcalImport;
+}
+
+function gcalImport(){
+  var cbs=document.querySelectorAll('.gcal-cb:checked');
+  if(!cbs.length){showToast('取り込む予定を選んでください');return;}
+  var gdlEl=document.getElementById('gc-dl');
+  var gdl=gdlEl?gdlEl.value:'';
+  var add=0,upd=0;
+  for(var i=0;i<cbs.length;i++){
+    var x=gcalItems[parseInt(cbs[i].getAttribute('data-i'),10)];
+    var ex=null;
+    for(var j=0;j<D.events.length;j++)if(D.events[j].gid===x.gid){ex=D.events[j];break;}
+    if(ex){
+      ex.date=x.date;ex.title=x.title;ex.type=x.type;ex.place=x.place;ex.start=x.start;ex.end=x.end;
+      if(gdl)ex.dl=gdl;
+      upd++;
+    }else{
+      D.events.push({id:'g'+Date.now()+'_'+i,gid:x.gid,date:x.date,title:x.title,type:x.type,place:x.place,start:x.start,end:x.end,dl:gdl});
+      add++;
+    }
+  }
+  save();closeModal();
+  showToast('新規'+add+'件 / 更新'+upd+'件を取り込みました'+(gdl?'（期限 '+fdsp(gdl)+'）':''));
+  var d=new Date(TODAY);CY=d.getFullYear();CM=d.getMonth();
+  drawAdmin();drawCal();
+}
+
+function openEvEditModal(eid){
+  var ev=null;for(var i=0;i<D.events.length;i++)if(D.events[i].id===eid){ev=D.events[i];break;}
+  if(!ev)return;
+  var mhtml='<div class="modal-ttl">イベントを編集<button class="modal-close" onclick="closeModal()">&#215;</button></div>';
+  mhtml+='<div class="g2"><div><label class="flbl">日付</label><input type="date" class="finp" id="ev-edit-date" value="'+esc(ev.date)+'"></div>';
+  mhtml+='<div><label class="flbl">種別</label><input type="text" class="finp" id="ev-edit-type" value="'+esc(ev.type||'練習')+'" placeholder="練習"></div></div>';
+  mhtml+='<label class="flbl">タイトル</label><input type="text" class="finp" id="ev-edit-title" value="'+esc(ev.title)+'" style="margin-bottom:6px">';
+  mhtml+='<label class="flbl">場所</label><input type="text" class="finp" id="ev-edit-place" value="'+esc(ev.place||'')+'" style="margin-bottom:6px">';
+  mhtml+='<label class="flbl">時間</label><div class="g2"><input type="time" class="finp" id="ev-edit-start" value="'+esc(ev.start||'')+'"><input type="time" class="finp" id="ev-edit-end" value="'+esc(ev.end||'')+'"></div>';
+  mhtml+='<label class="flbl">入力期限（空欄なら開催の'+dlDays()+'日前 = '+fdsp(addDays(ev.date,-dlDays()))+'）</label>';
+  mhtml+='<input type="date" class="finp" id="ev-edit-dl" value="'+esc(ev.dl||'')+'" style="margin-bottom:6px">';
+  mhtml+='<button class="modal-btn" id="ev-edit-save">保存する</button>';
+  mhtml+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>';
+  openModal(mhtml);
+  document.getElementById('ev-edit-save').onclick=function(){
+    var d=document.getElementById('ev-edit-date').value;
+    var t=document.getElementById('ev-edit-title').value.trim();
+    if(!d||!t){showToast('日付とタイトルを入力してください');return;}
+    ev.date=d;ev.title=t;
+    ev.type=document.getElementById('ev-edit-type').value.trim()||'練習';
+    ev.place=document.getElementById('ev-edit-place').value.trim();
+    ev.start=document.getElementById('ev-edit-start').value;
+    ev.end=document.getElementById('ev-edit-end').value;
+    ev.dl=document.getElementById('ev-edit-dl').value||'';
+    save();closeModal();showToast('保存しました');drawCal();drawAdmin();
+  };
+}
+
+function drawDuty(){
+  var dsel=document.getElementById('dsel');var dlist=document.getElementById('dlist');
+  if(!dsel||!dlist)return;
+  var eid=dsel.value;var att=D.att[eid]||{};
+  var duties=dutyList(att);
+  var html='';
+  if(duties.length)html='<div class="dutybox" style="margin-bottom:8px"><div class="dutybox-t">当番</div><div class="dutybox-n">'+esc(duties.join('・'))+'</div></div>';
+  var players=D.members.filter(function(m){return m.type==='player';});
+  var anyShown=false;
+  for(var i=0;i<players.length;i++){
+    var m=players[i];var a=att[m.id]||{};
+    if(!a.care||a.care==='ng')continue;
+    anyShown=true;var isDuty=a.duty||false;
+    var mark=a.care==='ok'?'<span style="color:#2e7d32;font-size:16px">○</span>':'<span style="color:#f57f17;font-size:16px">△</span>';
+    html+='<div class="carerow">'+mark+'<span class="carename">'+esc(m.parent||m.name)+'<span style="font-size:11px;color:#888;margin-left:4px">（'+esc(m.name)+'）</span></span>';
+    html+='<button class="dtgl'+(isDuty?' on':'')+'" data-eid="'+eid+'" data-mid="'+m.id+'" data-pname="'+esc(m.parent||m.name)+'">'+(isDuty?'当番✓':'当番')+'</button></div>';
+  }
+  if(!anyShown)html+='<div style="color:#aaa;font-size:13px">○または△の保護者がいません</div>';
+  dlist.innerHTML=html;
+  var dtgls=dlist.querySelectorAll('.dtgl');
+  for(var i=0;i<dtgls.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        var eid2=btn.getAttribute('data-eid');var mid2=btn.getAttribute('data-mid');var pname=btn.getAttribute('data-pname');
+        var a2=getA(eid2,mid2);a2.duty=!a2.duty;a2.pname=pname;
+        save();drawDuty();drawCal();
+      };
+    })(dtgls[i]);
+  }
+}
+
+function drawMlist(){
+  var el=document.getElementById('mlist');if(!el)return;
+  var players=D.members.filter(function(m){return m.type==='player';});
+  var coaches=D.members.filter(function(m){return m.type==='coach';});
+  var html='';
+  if(players.length){
+    html+='<div class="slbl">選手・保護者</div>';
+    for(var i=0;i<players.length;i++){
+      var m=players[i];
+      var u=null;for(var j=0;j<D.users.length;j++)if(D.users[j].mid===m.id){u=D.users[j];break;}
+      html+='<div class="mli"><div class="mli-info"><div style="font-weight:bold">'+esc(m.name)+'</div>';
+      if(m.parent)html+='<div style="font-size:11px;color:#888">保護者: '+esc(m.parent)+(u?' / PIN: '+u.pin:'')+'</div>';
+      html+='</div><div class="mli-btns">';
+      html+='<button class="icobtn edit-member-btn" data-mid="'+m.id+'">編集</button>';
+      html+='<button class="icobtn del reset-pin-btn" data-uid="'+(u?u.id:'')+'" data-uname="'+(u?esc(u.name):'')+'">PIN初期化</button>';
+      html+='<button class="icobtn del del-member-btn" data-mid="'+m.id+'">削除</button>';
+      html+='</div></div>';
+    }
+  }
+  if(coaches.length){
+    html+='<div class="slbl">コーチ</div>';
+    for(var i=0;i<coaches.length;i++){
+      var m=coaches[i];
+      var u=null;for(var j=0;j<D.users.length;j++)if(D.users[j].mid===m.id){u=D.users[j];break;}
+      html+='<div class="mli"><div class="mli-info"><div style="font-weight:bold">'+esc(m.name)+'</div>';
+      if(u)html+='<div style="font-size:11px;color:#888">PIN: '+u.pin+'</div>';
+      html+='</div><div class="mli-btns">';
+      html+='<button class="icobtn edit-member-btn" data-mid="'+m.id+'">編集</button>';
+      if(u)html+='<button class="icobtn del reset-pin-btn" data-uid="'+u.id+'" data-uname="'+esc(u.name)+'">PIN初期化</button>';
+      html+='<button class="icobtn del del-member-btn" data-mid="'+m.id+'">削除</button>';
+      html+='</div></div>';
+    }
+  }
+  el.innerHTML=html;
+  // 削除
+  var delBtns=el.querySelectorAll('.del-member-btn');
+  for(var i=0;i<delBtns.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        if(!confirm('削除しますか？\n（過去の当番は履歴として残ります）'))return;
+        var mid2=btn.getAttribute('data-mid');
+        // 退団前に当番の表示名を履歴として保存
+        var snap='';
+        for(var j=0;j<D.members.length;j++)if(D.members[j].id===mid2){snap=D.members[j].parent||D.members[j].name;break;}
+        for(var eid in D.att){
+          var a=D.att[eid][mid2];
+          if(a&&a.duty&&!a.pname)a.pname=snap;
+        }
+        D.members=D.members.filter(function(m){return m.id!==mid2;});
+        D.users=D.users.filter(function(u){return u.mid!==mid2;});
+        save();drawAdmin();showToast('削除しました');
+      };
+    })(delBtns[i]);
+  }
+  // PIN初期化
+  var resetBtns=el.querySelectorAll('.reset-pin-btn');
+  for(var i=0;i<resetBtns.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        var uid=btn.getAttribute('data-uid');var uname=btn.getAttribute('data-uname');
+        if(!uid)return;
+        openModal(
+          '<div class="modal-ttl">PIN初期化<button class="modal-close" onclick="closeModal()">&#215;</button></div>'+
+          '<div style="font-size:14px;margin-bottom:10px">'+esc(uname)+'のPINを初期化します。<br>新しいPINを入力してください。</div>'+
+          '<input type="text" inputmode="numeric" maxlength="4" class="finp" id="reset-pin-inp" placeholder="0000" style="font-size:20px;letter-spacing:6px;text-align:center">'+
+          '<div style="color:#c62828;font-size:13px;min-height:16px;margin-top:4px" id="reset-err"></div>'+
+          '<button class="modal-btn" id="reset-pin-confirm">初期化する</button>'+
+          '<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>'
+        );
+        document.getElementById('reset-pin-confirm').onclick=function(){
+          var newpin=document.getElementById('reset-pin-inp').value;
+          if(!/^\d{4}$/.test(newpin)){document.getElementById('reset-err').textContent='4桁の数字を入力してください';return;}
+          for(var j=0;j<D.users.length;j++)if(D.users[j].id===uid){D.users[j].pin=newpin;break;}
+          save();closeModal();drawMlist();showToast('PINを初期化しました');
+        };
+      };
+    })(resetBtns[i]);
+  }
+  // 編集
+  var editBtns=el.querySelectorAll('.edit-member-btn');
+  for(var i=0;i<editBtns.length;i++){
+    (function(btn){
+      btn.onclick=function(){
+        var mid2=btn.getAttribute('data-mid');
+        var m=null;for(var j=0;j<D.members.length;j++)if(D.members[j].id===mid2){m=D.members[j];break;}
+        if(!m)return;
+        var u=null;for(var j=0;j<D.users.length;j++)if(D.users[j].mid===mid2){u=D.users[j];break;}
+        var isPlayer=m.type==='player';
+        var mhtml='<div class="modal-ttl">メンバー編集<button class="modal-close" onclick="closeModal()">&#215;</button></div>';
+        mhtml+='<label class="flbl">'+(isPlayer?'選手名':'コーチ名')+'</label>';
+        mhtml+='<input type="text" class="finp" id="edit-name" value="'+esc(m.name)+'" style="margin-bottom:6px">';
+        if(isPlayer){
+          mhtml+='<label class="flbl">保護者名（当番表示に使われます）</label>';
+          mhtml+='<input type="text" class="finp" id="edit-parent" value="'+esc(m.parent||'')+'" placeholder="山田家（太郎）" style="margin-bottom:6px">';
+        }
+        if(u){
+          mhtml+='<label class="flbl">ログイン表示名</label>';
+          mhtml+='<input type="text" class="finp" id="edit-uname" value="'+esc(u.name)+'" style="margin-bottom:6px">';
+        }
+        mhtml+='<button class="modal-btn" id="edit-save-btn">保存する</button>';
+        mhtml+='<button class="modal-btn gray" onclick="closeModal()" style="margin-top:6px">キャンセル</button>';
+        openModal(mhtml);
+        document.getElementById('edit-save-btn').onclick=function(){
+          var newName=document.getElementById('edit-name').value.trim();
+          if(!newName){showToast('名前を入力してください');return;}
+          var oldParent=m.parent||'';
+          m.name=newName;
+          if(isPlayer){
+            var newParent=document.getElementById('edit-parent').value.trim();
+            m.parent=newParent;
+          }
+          if(u){
+            var uEl=document.getElementById('edit-uname');
+            var newUname=uEl?uEl.value.trim():'';
+            if(newUname&&newUname!==oldParent)u.name=newUname;
+            else if(isPlayer&&newParent)u.name=newParent;
+            else if(!isPlayer)u.name=newName;
+          }
+          if(ME&&u&&ME.id===u.id){ME=u;document.getElementById('hname').textContent=u.name;}
+          save();closeModal();drawAdmin();showToast('保存しました');
+        };
+      };
+    })(editBtns[i]);
+  }
+}
+
+
+// クラウドから更新が届いたときの再描画（入力中・モーダル表示中は待つ）
+function refreshView(){
+  var busy=!document.getElementById('modal-bg').classList.contains('hidden');
+  var ae=document.activeElement;
+  if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))busy=true;
+  if(busy){clearTimeout(refreshView.t);refreshView.t=setTimeout(refreshView,2000);return;}
+  if(ME){
+    var u=null;for(var i=0;i<D.users.length;i++)if(D.users[i].id===ME.id){u=D.users[i];break;}
+    if(!u){doLogout();return;}
+    ME=u;
+  }
+  updateHeader();
+  var cur=['sc','sd','si','sa','sl'].filter(function(id){return document.getElementById(id).style.display==='block';})[0];
+  if(cur==='sc')drawCal();else if(cur==='sd')drawDetail();else if(cur==='si')drawInput();else if(cur==='sa')drawAdmin();
+}
+
+// ===== 起動 =====
+initEvents();
+load();
+updateHeader();
+// 予定のある直近の月を開く
+(function(){
+  if(!D.events.length)return;
+  var ts=fmtD(TODAY);
+  var future=D.events.filter(function(e){return e.date>=ts;}).sort(function(a,b){return a.date<b.date?-1:1;});
+  var target=future.length?future[0]:D.events.slice().sort(function(a,b){return a.date<b.date?1:-1;})[0];
+  var d=new Date(target.date+'T00:00:00');
+  CY=d.getFullYear();CM=d.getMonth();
+})();
+goCalendar();
+</script>
+<script type="module">
+// ===== Firebase (Firestore) 連携 =====
+// Firebaseコンソールの「プロジェクトの設定 > マイアプリ(Web)」の値を貼り付けてください。
+// apiKey が空のあいだはクラウド同期せず、従来どおり端末内(localStorage)だけで動きます。
+var FIREBASE_CONFIG={
+  apiKey:"AIzaSyAsVe0pUORoV9Zn3OEU40PUn4Y_IIEvoI4",
+  authDomain:"matsuoka-fc.firebaseapp.com",
+  projectId:"matsuoka-fc",
+  storageBucket:"matsuoka-fc.firebasestorage.app",
+  messagingSenderId:"921253467159",
+  appId:"1:921253467159:web:445ba8de72540b3ddf3852"
+};
+
+// App Check（reCAPTCHA v3）のサイトキー。
+// Firebaseコンソール「App Check > アプリを登録 > reCAPTCHA v3」で発行した公開キーを貼り付けます。
+// 空のあいだは App Check なしで動きます（＝このページ以外からの読み書きを弾けません）。
+var RECAPTCHA_SITE_KEY="";
+
+if(FIREBASE_CONFIG.apiKey){
+  var V="10.14.1",B="https://www.gstatic.com/firebasejs/"+V+"/";
+  var A=await import(B+"firebase-app.js");
+  var app=A.initializeApp(FIREBASE_CONFIG);
+
+  // App Check: このページからのアクセスだと証明する（Firestoreより先に初期化する必要がある）
+  if(RECAPTCHA_SITE_KEY){
+    try{
+      var AC=await import(B+"firebase-app-check.js");
+      AC.initializeAppCheck(app,{
+        provider:new AC.ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+        isTokenAutoRefreshEnabled:true
+      });
+    }catch(e){console.error('appcheck',e);}
+  }
+
+  // 匿名ログイン: ルールで request.auth を必須にしているため、これが通らないとクラウドは使わない
+  var AU=await import(B+"firebase-auth.js");
+  var auth=AU.getAuth(app);
+  try{
+    await (auth.currentUser?Promise.resolve():AU.signInAnonymously(auth));
+  }catch(e){
+    console.error('auth',e);
+    window.showToast('クラウドに接続できません。この端末内だけで動作します');
+    throw e;
+  }
+
+  var F=await import(B+"firebase-firestore.js");
+  var db=F.initializeFirestore(app,{localCache:F.persistentLocalCache()});
+  var D=function(){return window.D;};
+  var synced={};      // 最後にクラウドと一致していた内容（差分検出用）
+  var syncedAtt={};   // eid -> {mid: json}
+  var ready=false;    // 初回同期が済むまで書き込まない（古い端末データでクラウドを上書きしない）
+  var arrived={meta:false,att:false},metaExists=false,cloudAtt={};
+  var j=function(x){return JSON.stringify(x===undefined?null:x);};
+  var clean=function(x){return JSON.parse(j(x));};
+
+  // 全体データ → クラウド上の文書(チャンク)
+  var chunks=function(){
+    var d=D();
+    return {
+      meta:{appTitle:d.appTitle||'',dlDays:(typeof d.dlDays==='number')?d.dlDays:1,gcal:d.gcal||null},
+      logo:{data:d.appLogo||''},
+      users:{list:d.users},
+      members:{list:d.members},
+      events:{list:d.events}
+    };
+  };
+  var applyChunk={
+    meta:function(o){var d=D();d.appTitle=o.appTitle||d.appTitle;if(typeof o.dlDays==='number')d.dlDays=o.dlDays;if(o.gcal)d.gcal=o.gcal;},
+    logo:function(o){D().appLogo=o.data||'';},
+    users:function(o){D().users=o.list||[];},
+    members:function(o){D().members=o.list||[];},
+    events:function(o){D().events=o.list||[];}
+  };
+
+  var push=function(){
+    if(!ready)return;
+    var d=D(),c=chunks();
+    Object.keys(c).forEach(function(k){
+      var v=clean(c[k]),sv=j(v);
+      if(synced[k]===sv)return;
+      var prev=synced[k];synced[k]=sv;
+      F.setDoc(F.doc(db,'team',k),v).catch(function(e){synced[k]=prev;console.error('sync',k,e);});
+    });
+    // 出欠: イベントごとの文書に、本人(mid)のフィールドだけを書く（同時入力で上書きし合わない）
+    var live={};
+    Object.keys(d.att||{}).forEach(function(eid){
+      live[eid]=1;
+      var cur=d.att[eid]||{},sy=syncedAtt[eid]||(syncedAtt[eid]={}),upd={},touched=false;
+      Object.keys(cur).forEach(function(mid){
+        var v=clean(cur[mid]),sv=j(v);
+        if(sy[mid]!==sv){upd[mid]=v;touched=true;}
+      });
+      Object.keys(sy).forEach(function(mid){if(!(mid in cur)){upd[mid]=F.deleteField();touched=true;}});
+      if(!touched)return;
+      var snapshot={};Object.keys(upd).forEach(function(m){snapshot[m]=(m in cur)?j(clean(cur[m])):undefined;});
+      Object.keys(snapshot).forEach(function(m){if(snapshot[m]===undefined)delete sy[m];else sy[m]=snapshot[m];});
+      F.setDoc(F.doc(db,'att',eid),upd,{merge:true}).catch(function(e){
+        Object.keys(upd).forEach(function(m){delete sy[m];});console.error('sync att',eid,e);
+      });
+    });
+    Object.keys(syncedAtt).forEach(function(eid){
+      if(live[eid])return;
+      delete syncedAtt[eid];
+      F.deleteDoc(F.doc(db,'att',eid)).catch(function(e){console.error('sync att del',eid,e);});
+    });
+  };
+
+  var changed=function(){window.saveLocal();window.refreshView();};
+
+  // meta と att の初回内容が揃ったら同期開始
+  var tryReady=function(){
+    if(ready||!arrived.meta||!arrived.att)return;
+    ready=true;
+    var d=D();
+    if(metaExists){
+      // クラウドが正: 出欠はクラウドの内容で置き換える
+      d.att={};syncedAtt={};
+      Object.keys(cloudAtt).forEach(function(eid){
+        d.att[eid]=clean(cloudAtt[eid]);
+        syncedAtt[eid]={};Object.keys(cloudAtt[eid]).forEach(function(m){syncedAtt[eid][m]=j(cloudAtt[eid][m]);});
+      });
+      changed();
+    }
+    push();   // クラウドが空なら、この端末のデータを初期データとして登録
+  };
+
+  Object.keys(applyChunk).forEach(function(k){
+    F.onSnapshot(F.doc(db,'team',k),function(snap){
+      if(k==='meta'&&!arrived.meta&&(snap.exists()||!snap.metadata.fromCache)){
+        arrived.meta=true;metaExists=snap.exists();
+      }
+      if(!snap.exists()){tryReady();return;}
+      if(snap.metadata.hasPendingWrites)return;   // 自分の書き込みの反映は無視
+      var o=snap.data(),sv=j(o);
+      if(synced[k]!==sv){synced[k]=sv;applyChunk[k](o);changed();}
+      tryReady();
+    },function(e){console.error('listen',k,e);});
+  });
+
+  F.onSnapshot(F.collection(db,'att'),function(qs){
+    var any=false,d=D();
+    if(!arrived.att&&(qs.size>0||!qs.metadata.fromCache))arrived.att=true;
+    qs.docChanges().forEach(function(ch){
+      var eid=ch.doc.id;
+      if(!ready){   // 初回同期前: クラウドの内容を控えるだけ
+        if(ch.type==='removed')delete cloudAtt[eid];else cloudAtt[eid]=ch.doc.data();
+        return;
+      }
+      if(ch.doc.metadata.hasPendingWrites)return;
+      if(ch.type==='removed'){
+        if(d.att[eid]){delete d.att[eid];any=true;}
+        delete syncedAtt[eid];return;
+      }
+      var o=ch.doc.data(),sy=syncedAtt[eid]||(syncedAtt[eid]={});
+      var cur=d.att[eid]||(d.att[eid]={});
+      Object.keys(o).forEach(function(mid){
+        var sv=j(o[mid]);
+        if(sy[mid]===sv)return;
+        sy[mid]=sv;cur[mid]=o[mid];any=true;
+      });
+      Object.keys(sy).forEach(function(mid){if(!(mid in o)){delete sy[mid];if(cur[mid]){delete cur[mid];any=true;}}});
+    });
+    if(any)changed();
+    tryReady();
+  },function(e){console.error('listen att',e);});
+
+  window.CloudSync={push:push};
+}
+</script>
+</body>
+</html>
