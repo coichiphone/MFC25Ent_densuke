@@ -87,12 +87,14 @@ body{font-family:sans-serif;background:#f0f2f5;font-size:14px}
 .isec{margin-bottom:12px}
 .ilbl{font-size:12px;font-weight:bold;color:#444;margin-bottom:5px}
 .abtnrow{display:flex;gap:6px}
-.abtn{flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:#f8f8f8;font-size:17px;cursor:pointer;text-align:center}
+.abtn{flex:1;padding:8px 4px;border:1px solid #ddd;border-radius:8px;background:#f8f8f8;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+.amk{font-size:19px;line-height:1.1}
+.alb{font-size:11px;color:#777;letter-spacing:.02em;white-space:nowrap}
+.abtn.ok .alb,.abtn.ng .alb,.abtn.my .alb,.abtn.lt .alb{color:inherit}
 .abtn.ok{background:#e8f5e9;border-color:#4caf50;font-weight:bold}
 .abtn.ng{background:#ffebee;border-color:#ef5350;font-weight:bold}
 .abtn.my{background:#fff8e1;border-color:#ffb300;font-weight:bold}
 .abtn.lt{background:#e8eaf6;border-color:#5c6bc0;font-weight:bold}
-.abtn.late-lbl{font-size:14px;line-height:1.25}
 .ntarea.req{border-color:#5c6bc0;background:#f5f6fc}
 .reqmsg{font-size:12px;color:#3949ab;margin-top:4px;font-weight:bold}
 .reqmsg.bad{color:#c62828}
@@ -501,14 +503,14 @@ function drawCal(){
       html+='<div class="esum"><span style="color:#888;min-width:34px">選手</span>';
       if(tp.ok)html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span>';
       if(tp.my)html+='<span style="color:#f57f17"><b>△</b>'+tp.my+'</span>';
-      if(tp.lt)html+='<span style="color:#3949ab"><b>遅早</b>'+tp.lt+'</span>';
+      if(tp.lt)html+='<span style="color:#3949ab"><b>◐</b>'+tp.lt+'</span>';
       if(tp.ng)html+='<span style="color:#c62828"><b>×</b>'+tp.ng+'</span>';
       if(tp.no)html+='<span style="color:#bbb">未'+tp.no+'</span>';
       html+='</div>';
       html+='<div class="esum"><span style="color:#888;min-width:34px">コーチ</span>';
       if(tcz.ok)html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span>';
       if(tcz.my)html+='<span style="color:#f57f17"><b>△</b>'+tcz.my+'</span>';
-      if(tcz.lt)html+='<span style="color:#3949ab"><b>遅早</b>'+tcz.lt+'</span>';
+      if(tcz.lt)html+='<span style="color:#3949ab"><b>◐</b>'+tcz.lt+'</span>';
       if(tcz.ng)html+='<span style="color:#c62828"><b>×</b>'+tcz.ng+'</span>';
       if(tcz.no)html+='<span style="color:#bbb">未'+tcz.no+'</span>';
       html+='</div>';
@@ -591,14 +593,14 @@ function drawDetail(){
   if(duties.length)html+='<div class="dutybox"><div class="dutybox-t">看護当番</div><div class="dutybox-n">'+esc(duties.join('・'))+'</div></div>';
   var tp=tally(att),tcz=tallyCoach(att);
   html+='<div class="card" style="padding:10px 14px"><div class="esum" style="margin-bottom:2px"><span style="color:#888;min-width:34px">選手</span>';
-  html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span><span style="color:#f57f17"><b>△</b>'+tp.my+'</span>'+(tp.lt?'<span style="color:#3949ab"><b>遅早</b>'+tp.lt+'</span>':'')+'<span style="color:#c62828"><b>×</b>'+tp.ng+'</span><span style="color:#bbb">未'+tp.no+'</span></div>';
+  html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span><span style="color:#f57f17"><b>△</b>'+tp.my+'</span>'+(tp.lt?'<span style="color:#3949ab"><b>◐</b>'+tp.lt+'</span>':'')+'<span style="color:#c62828"><b>×</b>'+tp.ng+'</span><span style="color:#bbb">未'+tp.no+'</span></div>';
   html+='<div class="esum"><span style="color:#888;min-width:34px">コーチ</span>';
-  html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span><span style="color:#f57f17"><b>△</b>'+tcz.my+'</span>'+(tcz.lt?'<span style="color:#3949ab"><b>遅早</b>'+tcz.lt+'</span>':'')+'<span style="color:#c62828"><b>×</b>'+tcz.ng+'</span><span style="color:#bbb">未'+tcz.no+'</span></div></div>';
+  html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span><span style="color:#f57f17"><b>△</b>'+tcz.my+'</span>'+(tcz.lt?'<span style="color:#3949ab"><b>◐</b>'+tcz.lt+'</span>':'')+'<span style="color:#c62828"><b>×</b>'+tcz.ng+'</span><span style="color:#bbb">未'+tcz.no+'</span></div></div>';
   function mkrow(m){
     var a=att[m.id]||{};var ans=a.ans||null;
     if(ans!=='ok'&&ans!=='maybe'&&ans!=='late')return '';
     var mark=ans==='ok'?'<span style="color:#2e7d32;font-size:18px">○</span>'
-            :ans==='late'?'<span style="color:#3949ab;font-size:14px;font-weight:bold">遅早</span>'
+            :ans==='late'?'<span style="color:#3949ab;font-size:18px">◐</span>'
             :'<span style="color:#f57f17;font-size:18px">△</span>';
     var note=a.note||'';
     var r='<div class="mcard"><div class="mtop">'+mark;
@@ -633,6 +635,20 @@ function drawDetail(){
 }
 
 // ===== 入力 =====
+// 出欠・当番の選択肢（記号と文字ラベルをセットで出す）
+var ANS={ok:{mk:'○',lb:'参加',cls:'ok'},ng:{mk:'×',lb:'休み',cls:'ng'},
+         maybe:{mk:'△',lb:'未定',cls:'my'},late:{mk:'◐',lb:'遅刻早退',cls:'lt'}};
+var CARE={ok:{mk:'○',lb:'できる',cls:'ok'},ng:{mk:'×',lb:'できない',cls:'ng'},
+          maybe:{mk:'△',lb:'未定',cls:'my'}};
+function optBtn(set,eid,mid,v,cur,type){
+  var o=set[v];
+  return '<button class="abtn'+(cur===v?' '+o.cls:'')+'" data-eid="'+eid+'" data-mid="'+mid+'"'
+       + ' data-v="'+v+'" data-t="'+type+'" aria-label="'+o.lb+'">'
+       + '<span class="amk">'+o.mk+'</span><span class="alb">'+o.lb+'</span></button>';
+}
+function ansBtn(eid,mid,v,cur){return optBtn(ANS,eid,mid,v,cur,'ans');}
+function careBtn(eid,mid,v,cur){return optBtn(CARE,eid,mid,v,cur,'care');}
+
 function drawInput(){
   var body=document.getElementById('si');
   if(!ME){body.innerHTML='<div class="noev">ログインしてください</div>';return;}
@@ -659,10 +675,7 @@ function drawInput(){
     html+='<div class="imeta" style="margin-top:-6px;'+(over?'color:#EF6C00;font-weight:bold':'')+'">入力期限: '+fdsp(dlv)+(over?'（期限切れ）':'')+'</div>';
     html+='<div class="isec"><div class="ilbl">'+esc(member.name)+'の出欠</div>';
     html+='<div class="abtnrow">';
-    html+='<button class="abtn'+(a.ans==='ok'?' ok':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ok" data-t="ans">○</button>';
-    html+='<button class="abtn'+(a.ans==='ng'?' ng':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ng" data-t="ans">×</button>';
-    html+='<button class="abtn'+(a.ans==='maybe'?' my':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="maybe" data-t="ans">△</button>';
-    html+='<button class="abtn late-lbl'+(a.ans==='late'?' lt':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="late" data-t="ans">遅刻<br>早退</button>';
+    html+=ansBtn(ev.id,mid,'ok',a.ans)+ansBtn(ev.id,mid,'ng',a.ans)+ansBtn(ev.id,mid,'maybe',a.ans)+ansBtn(ev.id,mid,'late',a.ans);
     html+='</div>';
     var needNote=(a.ans==='late');
     html+='<textarea class="ntarea'+(needNote?' req':'')+'" rows="2" placeholder="'+(needNote?'何時ごろになるかを書いてください':'備考（任意）')+'" data-eid="'+ev.id+'" data-mid="'+mid+'">'+esc(a.note||'')+'</textarea>';
@@ -672,9 +685,7 @@ function drawInput(){
     if(isParent){
       html+='<div class="isec"><div class="ilbl">看護当番の可否</div>';
       html+='<div class="abtnrow">';
-      html+='<button class="abtn'+(a.care==='ok'?' ok':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ok" data-t="care">○</button>';
-      html+='<button class="abtn'+(a.care==='ng'?' ng':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ng" data-t="care">×</button>';
-      html+='<button class="abtn'+(a.care==='maybe'?' my':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="maybe" data-t="care">△</button>';
+      html+=careBtn(ev.id,mid,'ok',a.care)+careBtn(ev.id,mid,'ng',a.care)+careBtn(ev.id,mid,'maybe',a.care);
       html+='</div></div>';
     }
     html+='</div>';
@@ -702,8 +713,8 @@ function drawInput(){
         var row=btn.parentElement;var siblings=row.querySelectorAll('.abtn');
         for(var j=0;j<siblings.length;j++){
           var v=siblings[j].getAttribute('data-v');
-          var cls=(v==='ok')?' ok':(v==='ng')?' ng':(v==='late')?' lt':' my';
-          siblings[j].className='abtn'+(v==='late'?' late-lbl':'')+(v===val?cls:'');
+          var set=(type==='ans')?ANS:CARE;
+          siblings[j].className='abtn'+(v===val?' '+set[v].cls:'');
         }
         if(type==='ans'){
           var sec=btn.closest('.isec');
