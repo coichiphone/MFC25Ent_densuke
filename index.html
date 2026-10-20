@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <meta name="referrer" content="no-referrer">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="出欠">
+<meta name="theme-color" content="#2e7d32">
 <title>チーム出欠管理</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -85,6 +91,8 @@ body{font-family:sans-serif;background:#f0f2f5;font-size:14px}
 .abtn.ok{background:#e8f5e9;border-color:#4caf50;font-weight:bold}
 .abtn.ng{background:#ffebee;border-color:#ef5350;font-weight:bold}
 .abtn.my{background:#fff8e1;border-color:#ffb300;font-weight:bold}
+.offbadge{display:inline-block;margin-left:6px;font-size:10px;font-weight:normal;color:#8d6e63;background:#efebe9;border-radius:4px;padding:2px 6px;vertical-align:middle}
+.icobtn[disabled]{opacity:.3;pointer-events:none}
 .ntarea{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-top:6px;font-family:sans-serif;resize:vertical}
 /* 管理 */
 .acard{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
@@ -218,11 +226,16 @@ function dutyList(att){
   return r;
 }
 // 選手のみの出欠集計
+// 休部中の人は出欠の対象から外す（過去の記録はそのまま残る）
+function activeMembers(type){
+  return D.members.filter(function(m){return m.type===type&&!m.off;});
+}
+
 function tally(att){
   var t={ok:0,ng:0,my:0,no:0};
   for(var i=0;i<D.members.length;i++){
     var m=D.members[i];
-    if(m.type!=='player')continue;
+    if(m.type!=='player'||m.off)continue;
     var a=att[m.id];
     if(!a||!a.ans)t.no++;
     else if(a.ans==='ok')t.ok++;
@@ -236,7 +249,7 @@ function tallyCoach(att){
   var t={ok:0,ng:0,my:0,no:0};
   for(var i=0;i<D.members.length;i++){
     var m=D.members[i];
-    if(m.type!=='coach')continue;
+    if(m.type!=='coach'||m.off)continue;
     var a=att[m.id];
     if(!a||!a.ans)t.no++;
     else if(a.ans==='ok')t.ok++;
@@ -449,7 +462,7 @@ function drawCal(){
       var duties=dutyList(att);
       html+='<div class="ecard'+((ev.id===selEid||ev.date===selDate)?' sel':'')+'" data-eid="'+ev.id+'" data-date="'+ev.date+'">';
       html+='<div class="emeta">'+fdsp(ev.date)+(ev.start?' '+ev.start:'')+(ev.end?' 〜 '+ev.end:'')+(ev.place?' | '+esc(ev.place):'')+'</div>';
-      html+='<div class="etitle">'+typeBadge(ev.type)+esc(ev.title)+'</div>';
+      html+='<div class="etitle">'+typeBadge(ev.type)+esc(ev.title)+(ev.note?'<span style="font-size:11px;color:#888;margin-left:6px">'+esc(ev.note)+'</span>':'')+'</div>';
       html+='<div class="esum"><span style="color:#888;min-width:34px">選手</span>';
       if(tp.ok)html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span>';
       if(tp.my)html+='<span style="color:#f57f17"><b>△</b>'+tp.my+'</span>';
@@ -555,8 +568,8 @@ function drawDetail(){
     r+='</div>'+(note?'<div class="mnote">'+esc(note)+'</div>':'')+'</div>';
     return r;
   }
-  var players=D.members.filter(function(m){return m.type==='player';});
-  var coaches=D.members.filter(function(m){return m.type==='coach';});
+  var players=activeMembers('player');
+  var coaches=activeMembers('coach');
   var ph=players.map(mkrow).join('');
   var ch=coaches.map(mkrow).join('');
   if(ph)html+='<div class="slbl">選手</div>'+ph;
@@ -687,6 +700,9 @@ function drawAdmin(){
   html+='<div class="sep"></div>';
   html+='<div style="font-size:12px;color:#888;margin-bottom:8px">PINコードを全員ぶん未設定に戻します。次に各自がログインするとき、自分でPINを決め直してもらう形になります。</div>';
   html+='<button class="addbtn" id="dx-pinreset">全員のPINを未設定に戻す</button>';
+  html+='<div class="sep"></div>';
+  html+='<div style="font-size:12px;color:#888;margin-bottom:8px">Googleカレンダーから取り込んだ予定のタイトルを、種別・場所・時間に分け直します。</div>';
+  html+='<button class="addbtn" id="dx-retitle">取り込んだ予定のタイトルを整理</button>';
   html+='</div>';
   // 入力期限をまとめて設定
   html+='<div class="acard"><h3>入力期限をまとめて設定</h3>';
@@ -754,6 +770,26 @@ function drawAdmin(){
     showToast('書き出しました');
   };
   document.getElementById('dx-pick').onclick=function(){document.getElementById('dx-file').click();};
+  document.getElementById('dx-retitle').onclick=function(){
+    // タイトルに時間が入ったままの取り込み予定だけを対象にする
+    var tg=D.events.filter(function(e){return e.gid&&/\d{1,2}[:：]\d{2}/.test(e.title||'');});
+    if(!tg.length){showToast('整理が必要な予定はありません');return;}
+    var ex=tg.slice(0,3).map(function(e){
+      var p=parseGcalTitle(e.title);
+      return '・'+e.title+'\n   → '+(p.title||(e.type==='試合'?'試合':'練習'))+(p.place?' / '+p.place:'')+(p.start?' / '+p.start+(p.end?'〜'+p.end:''):'')+(p.note?' / '+p.note:'');
+    }).join('\n');
+    if(!confirm(tg.length+'件の予定を整理します。\n\n'+ex+(tg.length>3?'\n  ほか'+(tg.length-3)+'件':'')+'\n\nよろしいですか？'))return;
+    for(var i=0;i<tg.length;i++){
+      var e=tg[i],p=parseGcalTitle(e.title);
+      if(!e.raw)e.raw=e.title;
+      e.title=p.title||(e.type==='試合'?'試合':'練習');
+      if(!e.place&&p.place)e.place=p.place;
+      if(!e.start&&p.start)e.start=p.start;
+      if(!e.end&&p.end)e.end=p.end;
+      if(!e.note&&p.note)e.note=p.note;
+    }
+    save();showToast(tg.length+'件を整理しました');drawAdmin();drawCal();
+  };
   document.getElementById('dx-pinreset').onclick=function(){
     if(!confirm('全員のPINコードを未設定に戻します。\n各自が次回ログインするときに、自分でPINを決め直すことになります。\nよろしいですか？'))return;
     for(var i=0;i<D.users.length;i++)D.users[i].pin='';
@@ -1036,15 +1072,48 @@ function gcalFetch(){
   });
 }
 
+// カレンダーのタイトルを「種別・場所・時間・メモ」に分解する。
+// 例: 「2年(看1)校庭14:00-15:30」→ 練習 / 校庭 / 14:00〜15:30 / 看1
+function parseGcalTitle(summary){
+  var s=(summary||'').trim();
+  var r={title:'',place:'',start:'',end:'',note:''};
+  var pad=function(t){var p=t.split(':');return (p[0].length<2?'0':'')+p[0]+':'+p[1];};
+  // 時間（14:00-15:30 / 14：00〜15：30 / 8:00- など）
+  var m=s.match(/(\d{1,2}[:：]\d{2})\s*[-–—~〜ー]\s*(\d{1,2}[:：]\d{2})/);
+  if(m){
+    r.start=pad(m[1].replace('：',':'));r.end=pad(m[2].replace('：',':'));
+    s=s.replace(m[0],' ');
+  }else{
+    m=s.match(/(\d{1,2}[:：]\d{2})\s*[-–—~〜ー]?/);
+    if(m){r.start=pad(m[1].replace('：',':'));s=s.replace(m[0],' ');}
+  }
+  // かっこ書き（看1 など）はメモとして残す
+  var notes=[];
+  s=s.replace(/[（(]([^）)]*)[)）]/g,function(_,inner){notes.push(inner.trim());return ' ';});
+  r.note=notes.filter(Boolean).join(' ');
+  // 先頭の学年（2年 など）は絞り込み用なので落とす
+  s=s.replace(/^\s*\d+年生?\s*/,'');
+  s=s.replace(/\s+/g,' ').trim();
+  // 試合系の言葉が入っていればタイトル、そうでなければ場所とみなす
+  if(/試合|大会|カップ|TRM|フェス|交流戦|リーグ/.test(s)){r.title=s;}
+  else{r.place=s;}
+  return r;
+}
+
 function gcalConv(it){
   if(!it.start)return null;
   var date=it.start.date||(it.start.dateTime||'').slice(0,10);
   if(!date)return null;
-  var st=it.start.dateTime?it.start.dateTime.slice(11,16):'';
-  var en=(it.end&&it.end.dateTime)?it.end.dateTime.slice(11,16):'';
-  var title=(it.summary||'(無題)').trim();
-  var type=/試合|大会|カップ|TRM|フェス/.test(title)?'試合':'練習';
-  return {gid:it.id,date:date,title:title,type:type,place:(it.location||'').trim(),start:st,end:en};
+  var raw=(it.summary||'').trim();
+  var p=parseGcalTitle(raw);
+  // 日時はカレンダーの開始終了を優先し、無ければタイトルから拾ったものを使う
+  var st=it.start.dateTime?it.start.dateTime.slice(11,16):p.start;
+  var en=(it.end&&it.end.dateTime)?it.end.dateTime.slice(11,16):p.end;
+  var type=/試合|大会|カップ|TRM|フェス|交流戦|リーグ/.test(raw)?'試合':'練習';
+  var title=p.title||(type==='試合'?'試合':'練習');
+  return {gid:it.id,date:date,title:title,type:type,
+          place:(it.location||'').trim()||p.place,
+          start:st,end:en,note:p.note,raw:raw||'(無題)'};
 }
 
 function gcalMatch(t){
@@ -1064,9 +1133,10 @@ function gcalRender(){
     var dup=D.events.some(function(e){return e.gid===x.gid;});
     var chk=gcalMatch(x.title)&&!dup;
     s+='<div class="gcal-row"><input type="checkbox" class="gcal-cb" data-i="'+i+'"'+(chk?' checked':'')+'>';
-    s+='<div class="gcal-info"><div class="gcal-ttl">'+esc(x.title)+(dup?'<span class="gcal-dup">取込済</span>':'')+'</div>';
+    s+='<div class="gcal-info"><div class="gcal-ttl">'+esc(x.title)+(x.note?'<span style="font-size:11px;color:#888;margin-left:6px">'+esc(x.note)+'</span>':'')+(dup?'<span class="gcal-dup">取込済</span>':'')+'</div>';
     var sameYear=(new Date(x.date+'T00:00:00')).getFullYear()===TODAY.getFullYear();
-    s+='<div class="gcal-meta">'+(sameYear?fdsp(x.date):fdspY(x.date))+(x.start?' '+x.start:'')+(x.end?'〜'+x.end:'')+(x.place?' | '+esc(x.place):'')+'</div></div></div>';
+    s+='<div class="gcal-meta">'+(sameYear?fdsp(x.date):fdspY(x.date))+(x.start?' '+x.start:'')+(x.end?'〜'+x.end:'')+(x.place?' | '+esc(x.place):'')+'</div>';
+    s+='<div style="font-size:11px;color:#bbb;margin-top:2px">元: '+esc(x.raw)+'</div></div></div>';
   }
   s+='<button class="modal-btn" id="gc-import" style="margin-top:10px">選んだ予定を取り込む</button>';
   el.innerHTML=s;
@@ -1086,11 +1156,11 @@ function gcalImport(){
     var ex=null;
     for(var j=0;j<D.events.length;j++)if(D.events[j].gid===x.gid){ex=D.events[j];break;}
     if(ex){
-      ex.date=x.date;ex.title=x.title;ex.type=x.type;ex.place=x.place;ex.start=x.start;ex.end=x.end;
+      ex.date=x.date;ex.title=x.title;ex.type=x.type;ex.place=x.place;ex.start=x.start;ex.end=x.end;ex.note=x.note;
       if(gdl)ex.dl=gdl;
       upd++;
     }else{
-      D.events.push({id:'g'+Date.now()+'_'+i,gid:x.gid,date:x.date,title:x.title,type:x.type,place:x.place,start:x.start,end:x.end,dl:gdl});
+      D.events.push({id:'g'+Date.now()+'_'+i,gid:x.gid,date:x.date,title:x.title,type:x.type,place:x.place,start:x.start,end:x.end,note:x.note,dl:gdl});
       add++;
     }
   }
@@ -1135,7 +1205,7 @@ function drawDuty(){
   var duties=dutyList(att);
   var html='';
   if(duties.length)html='<div class="dutybox" style="margin-bottom:8px"><div class="dutybox-t">当番</div><div class="dutybox-n">'+esc(duties.join('・'))+'</div></div>';
-  var players=D.members.filter(function(m){return m.type==='player';});
+  var players=activeMembers('player');
   var anyShown=false;
   for(var i=0;i<players.length;i++){
     var m=players[i];var a=att[m.id]||{};
@@ -1159,6 +1229,27 @@ function drawDuty(){
   }
 }
 
+// 並び替えボタン（同じ区分の中で1つ上/下へ）
+function ordBtns(mid,idx,len){
+  var s='';
+  s+='<button class="icobtn ord-btn" data-mid="'+mid+'" data-dir="-1"'+(idx===0?' disabled':'')+' title="上へ">▲</button>';
+  s+='<button class="icobtn ord-btn" data-mid="'+mid+'" data-dir="1"'+(idx===len-1?' disabled':'')+' title="下へ">▼</button>';
+  return s;
+}
+
+// 同じ区分(選手/コーチ)の中で順番を入れ替える
+function moveMember(mid,dir){
+  var m=null;for(var i=0;i<D.members.length;i++)if(D.members[i].id===mid){m=D.members[i];break;}
+  if(!m)return false;
+  var same=D.members.filter(function(x){return x.type===m.type;});
+  var pos=same.indexOf(m),to=pos+dir;
+  if(to<0||to>=same.length)return false;
+  var other=same[to];
+  var ia=D.members.indexOf(m),ib=D.members.indexOf(other);
+  D.members[ia]=other;D.members[ib]=m;
+  return true;
+}
+
 function drawMlist(){
   var el=document.getElementById('mlist');if(!el)return;
   var players=D.members.filter(function(m){return m.type==='player';});
@@ -1169,10 +1260,12 @@ function drawMlist(){
     for(var i=0;i<players.length;i++){
       var m=players[i];
       var u=null;for(var j=0;j<D.users.length;j++)if(D.users[j].mid===m.id){u=D.users[j];break;}
-      html+='<div class="mli"><div class="mli-info"><div style="font-weight:bold">'+esc(m.name)+'</div>';
-      if(m.parent)html+='<div style="font-size:11px;color:#888">保護者: '+esc(m.parent)+(u?' / PIN: '+u.pin:'')+'</div>';
+      html+='<div class="mli"'+(m.off?' style="opacity:.55"':'')+'><div class="mli-info"><div style="font-weight:bold">'+esc(m.name)+(m.off?'<span class="offbadge">休部中</span>':'')+'</div>';
+      if(m.parent)html+='<div style="font-size:11px;color:#888">保護者: '+esc(m.parent)+(u?' / PIN: '+(u.pin?'設定済み':'未設定'):'')+'</div>';
       html+='</div><div class="mli-btns">';
+      html+=ordBtns(m.id,i,players.length);
       html+='<button class="icobtn edit-member-btn" data-mid="'+m.id+'">編集</button>';
+      html+='<button class="icobtn off-member-btn" data-mid="'+m.id+'">'+(m.off?'復帰':'休部')+'</button>';
       html+='<button class="icobtn del reset-pin-btn" data-uid="'+(u?u.id:'')+'" data-uname="'+(u?esc(u.name):'')+'">PIN初期化</button>';
       html+='<button class="icobtn del del-member-btn" data-mid="'+m.id+'">削除</button>';
       html+='</div></div>';
@@ -1183,16 +1276,41 @@ function drawMlist(){
     for(var i=0;i<coaches.length;i++){
       var m=coaches[i];
       var u=null;for(var j=0;j<D.users.length;j++)if(D.users[j].mid===m.id){u=D.users[j];break;}
-      html+='<div class="mli"><div class="mli-info"><div style="font-weight:bold">'+esc(m.name)+'</div>';
-      if(u)html+='<div style="font-size:11px;color:#888">PIN: '+u.pin+'</div>';
+      html+='<div class="mli"'+(m.off?' style="opacity:.55"':'')+'><div class="mli-info"><div style="font-weight:bold">'+esc(m.name)+(m.off?'<span class="offbadge">休部中</span>':'')+'</div>';
+      if(u)html+='<div style="font-size:11px;color:#888">PIN: '+(u.pin?'設定済み':'未設定')+'</div>';
       html+='</div><div class="mli-btns">';
+      html+=ordBtns(m.id,i,coaches.length);
       html+='<button class="icobtn edit-member-btn" data-mid="'+m.id+'">編集</button>';
+      html+='<button class="icobtn off-member-btn" data-mid="'+m.id+'">'+(m.off?'復帰':'休部')+'</button>';
       if(u)html+='<button class="icobtn del reset-pin-btn" data-uid="'+u.id+'" data-uname="'+esc(u.name)+'">PIN初期化</button>';
       html+='<button class="icobtn del del-member-btn" data-mid="'+m.id+'">削除</button>';
       html+='</div></div>';
     }
   }
   el.innerHTML=html;
+  // 並び替え
+  el.querySelectorAll('.ord-btn').forEach(function(btn){
+    btn.onclick=function(){
+      if(moveMember(btn.getAttribute('data-mid'),parseInt(btn.getAttribute('data-dir'),10))){
+        save();drawMlist();
+      }
+    };
+  });
+  // 休部 / 復帰
+  el.querySelectorAll('.off-member-btn').forEach(function(btn){
+    btn.onclick=function(){
+      var mid2=btn.getAttribute('data-mid'),m=null;
+      for(var j=0;j<D.members.length;j++)if(D.members[j].id===mid2){m=D.members[j];break;}
+      if(!m)return;
+      if(m.off){
+        m.off=false;save();showToast(m.name+'さんを復帰にしました');
+      }else{
+        if(!confirm(m.name+'さんを休部にします。\n出欠の入力欄と集計から外れますが、これまでの記録は残ります。\nよろしいですか？'))return;
+        m.off=true;save();showToast(m.name+'さんを休部にしました');
+      }
+      drawMlist();drawCal();
+    };
+  });
   // 削除
   var delBtns=el.querySelectorAll('.del-member-btn');
   for(var i=0;i<delBtns.length;i++){

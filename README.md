@@ -53,7 +53,7 @@ PINを配り直したいときは、管理画面の「全員のPINを未設定�
 デプロイ:
 
 ```
-mkdir -p public && cp index.html robots.txt public/
+mkdir -p public && cp index.html robots.txt public/ && cp -r icons public/
 firebase deploy --only hosting --project matsuoka-fc
 ```
 
