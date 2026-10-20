@@ -45,3 +45,16 @@ PINを配り直したいときは、管理画面の「全員のPINを未設定�
 - PINの照合はブラウザ側で行っています。厳密に守る必要が出たら、保護者ごとのログイン（Firebase Auth）への移行が必要です。
 - 初回同期が終わるまでは書き込みません（古い端末のデータでクラウドを上書きしないため）。
 - 匿名ログインに失敗した場合はクラウドを使わず、端末内だけで動作します。
+
+## 公開先
+
+保護者に配るURLは **https://matsuoka-fc.web.app/**（Firebase Hosting）です。
+
+デプロイ:
+
+```
+mkdir -p public && cp index.html robots.txt public/
+firebase deploy --only hosting --project matsuoka-fc
+```
+
+`docs/` は旧URL（GitHub Pages）用の移転案内ページです。アプリ本体ではありません。

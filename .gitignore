@@ -1,3 +1,5 @@
 seed.local.json
 *.local.json
 .claude/
+.firebase/
+public/
