@@ -91,6 +91,11 @@ body{font-family:sans-serif;background:#f0f2f5;font-size:14px}
 .abtn.ok{background:#e8f5e9;border-color:#4caf50;font-weight:bold}
 .abtn.ng{background:#ffebee;border-color:#ef5350;font-weight:bold}
 .abtn.my{background:#fff8e1;border-color:#ffb300;font-weight:bold}
+.abtn.lt{background:#e8eaf6;border-color:#5c6bc0;font-weight:bold}
+.abtn.late-lbl{font-size:14px;line-height:1.25}
+.ntarea.req{border-color:#5c6bc0;background:#f5f6fc}
+.reqmsg{font-size:12px;color:#3949ab;margin-top:4px;font-weight:bold}
+.reqmsg.bad{color:#c62828}
 .offbadge{display:inline-block;margin-left:6px;font-size:10px;font-weight:normal;color:#8d6e63;background:#efebe9;border-radius:4px;padding:2px 6px;vertical-align:middle}
 .icobtn[disabled]{opacity:.3;pointer-events:none}
 .ntarea{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-top:6px;font-family:sans-serif;resize:vertical}
@@ -104,10 +109,11 @@ body{font-family:sans-serif;background:#f0f2f5;font-size:14px}
 .addbtn.primary{background:#378ADD;color:#fff;border-color:#378ADD}
 .cbrow{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
 .cblbl{display:flex;align-items:center;gap:3px;font-size:13px;cursor:pointer}
-.mli{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0}
+.mli{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid #f0f0f0}
 .mli:last-child{border-bottom:none}
-.mli-info{flex:1}
-.mli-btns{display:flex;gap:4px}
+.mli-info{flex:1 1 100%;min-width:0}
+.mli-btns{display:flex;gap:4px;flex-wrap:wrap}
+@media (min-width:620px){.mli-info{flex:1 1 auto}}
 .icobtn{background:none;border:1px solid #ddd;border-radius:6px;color:#555;cursor:pointer;font-size:12px;padding:3px 8px}
 .icobtn.del{color:#c62828;border-color:#f5c6c6}
 .carerow{background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.06);display:flex;align-items:center;gap:8px}
@@ -232,7 +238,7 @@ function activeMembers(type){
 }
 
 function tally(att){
-  var t={ok:0,ng:0,my:0,no:0};
+  var t={ok:0,ng:0,my:0,lt:0,no:0};
   for(var i=0;i<D.members.length;i++){
     var m=D.members[i];
     if(m.type!=='player'||m.off)continue;
@@ -240,13 +246,14 @@ function tally(att){
     if(!a||!a.ans)t.no++;
     else if(a.ans==='ok')t.ok++;
     else if(a.ans==='ng')t.ng++;
+    else if(a.ans==='late')t.lt++;
     else t.my++;
   }
   return t;
 }
 // コーチのみの出欠集計
 function tallyCoach(att){
-  var t={ok:0,ng:0,my:0,no:0};
+  var t={ok:0,ng:0,my:0,lt:0,no:0};
   for(var i=0;i<D.members.length;i++){
     var m=D.members[i];
     if(m.type!=='coach'||m.off)continue;
@@ -254,6 +261,7 @@ function tallyCoach(att){
     if(!a||!a.ans)t.no++;
     else if(a.ans==='ok')t.ok++;
     else if(a.ans==='ng')t.ng++;
+    else if(a.ans==='late')t.lt++;
     else t.my++;
   }
   return t;
@@ -285,10 +293,35 @@ function myOverdue(){
   return out;
 }
 
+// 遅刻・早退を選んだのに時間を書いていない予定（本人の分）
+function myLateNoNote(){
+  if(!ME||!ME.mid)return [];
+  var today=fmtD(TODAY), out=[];
+  for(var i=0;i<D.events.length;i++){
+    var ev=D.events[i];
+    if(ev.date<today)continue;
+    var a=(D.att[ev.id]||{})[ME.mid];
+    if(a&&a.ans==='late'&&!(a.note||'').trim())out.push(ev);
+  }
+  out.sort(function(x,y){return x.date<y.date?-1:1;});
+  return out;
+}
+
 function remindBanner(){
+  var s2='';
+  var late=myLateNoNote();
+  if(late.length){
+    s2='<div class="remind" style="border-color:#5c6bc0;background:#eef0fa">';
+    s2+='<div class="remind-t" style="color:#3949ab">&#9888; 遅刻・早退の時間が未記入です（'+late.length+'件）</div>';
+    for(var k=0;k<late.length&&k<5;k++){
+      s2+='<div class="remind-r">'+fdsp(late[k].date)+' '+esc(late[k].title)+' <span class="remind-m">備考に時間を書いてください</span></div>';
+    }
+    if(late.length>5)s2+='<div class="remind-r">ほか'+(late.length-5)+'件</div>';
+    s2+='<button class="remind-b" id="remind-go2">入力する</button></div>';
+  }
   var list=myOverdue();
-  if(!list.length)return '';
-  var s='<div class="remind"><div class="remind-t">&#9888; 入力期限を過ぎている予定があります（'+list.length+'件）</div>';
+  if(!list.length)return s2;
+  var s=s2+'<div class="remind"><div class="remind-t">&#9888; 入力期限を過ぎている予定があります（'+list.length+'件）</div>';
   for(var i=0;i<list.length&&i<5;i++){
     var r=list[i], miss=[];
     if(r.ans)miss.push('出欠');
@@ -302,6 +335,8 @@ function remindBanner(){
 function bindRemind(){
   var b=document.getElementById('remind-go');
   if(b)b.onclick=function(){goInput();};
+  var b2=document.getElementById('remind-go2');
+  if(b2)b2.onclick=function(){goInput();};
 }
 
 function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.className='toast show';setTimeout(function(){t.className='toast';},2200);}
@@ -466,12 +501,14 @@ function drawCal(){
       html+='<div class="esum"><span style="color:#888;min-width:34px">選手</span>';
       if(tp.ok)html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span>';
       if(tp.my)html+='<span style="color:#f57f17"><b>△</b>'+tp.my+'</span>';
+      if(tp.lt)html+='<span style="color:#3949ab"><b>遅早</b>'+tp.lt+'</span>';
       if(tp.ng)html+='<span style="color:#c62828"><b>×</b>'+tp.ng+'</span>';
       if(tp.no)html+='<span style="color:#bbb">未'+tp.no+'</span>';
       html+='</div>';
       html+='<div class="esum"><span style="color:#888;min-width:34px">コーチ</span>';
       if(tcz.ok)html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span>';
       if(tcz.my)html+='<span style="color:#f57f17"><b>△</b>'+tcz.my+'</span>';
+      if(tcz.lt)html+='<span style="color:#3949ab"><b>遅早</b>'+tcz.lt+'</span>';
       if(tcz.ng)html+='<span style="color:#c62828"><b>×</b>'+tcz.ng+'</span>';
       if(tcz.no)html+='<span style="color:#bbb">未'+tcz.no+'</span>';
       html+='</div>';
@@ -554,18 +591,23 @@ function drawDetail(){
   if(duties.length)html+='<div class="dutybox"><div class="dutybox-t">看護当番</div><div class="dutybox-n">'+esc(duties.join('・'))+'</div></div>';
   var tp=tally(att),tcz=tallyCoach(att);
   html+='<div class="card" style="padding:10px 14px"><div class="esum" style="margin-bottom:2px"><span style="color:#888;min-width:34px">選手</span>';
-  html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span><span style="color:#f57f17"><b>△</b>'+tp.my+'</span><span style="color:#c62828"><b>×</b>'+tp.ng+'</span><span style="color:#bbb">未'+tp.no+'</span></div>';
+  html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span><span style="color:#f57f17"><b>△</b>'+tp.my+'</span>'+(tp.lt?'<span style="color:#3949ab"><b>遅早</b>'+tp.lt+'</span>':'')+'<span style="color:#c62828"><b>×</b>'+tp.ng+'</span><span style="color:#bbb">未'+tp.no+'</span></div>';
   html+='<div class="esum"><span style="color:#888;min-width:34px">コーチ</span>';
-  html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span><span style="color:#f57f17"><b>△</b>'+tcz.my+'</span><span style="color:#c62828"><b>×</b>'+tcz.ng+'</span><span style="color:#bbb">未'+tcz.no+'</span></div></div>';
+  html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span><span style="color:#f57f17"><b>△</b>'+tcz.my+'</span>'+(tcz.lt?'<span style="color:#3949ab"><b>遅早</b>'+tcz.lt+'</span>':'')+'<span style="color:#c62828"><b>×</b>'+tcz.ng+'</span><span style="color:#bbb">未'+tcz.no+'</span></div></div>';
   function mkrow(m){
     var a=att[m.id]||{};var ans=a.ans||null;
-    if(ans!=='ok'&&ans!=='maybe')return '';
-    var mark=ans==='ok'?'<span style="color:#2e7d32;font-size:18px">○</span>':'<span style="color:#f57f17;font-size:18px">△</span>';
+    if(ans!=='ok'&&ans!=='maybe'&&ans!=='late')return '';
+    var mark=ans==='ok'?'<span style="color:#2e7d32;font-size:18px">○</span>'
+            :ans==='late'?'<span style="color:#3949ab;font-size:14px;font-weight:bold">遅早</span>'
+            :'<span style="color:#f57f17;font-size:18px">△</span>';
     var note=a.note||'';
     var r='<div class="mcard"><div class="mtop">'+mark;
     r+='<span class="mname">'+esc(m.name)+'</span>';
-    if(note)r+='<button class="ntoggle">&#9656; 備考</button>';
-    r+='</div>'+(note?'<div class="mnote">'+esc(note)+'</div>':'')+'</div>';
+    if(note&&ans!=='late')r+='<button class="ntoggle">&#9656; 備考</button>';
+    if(ans==='late'&&!note)r+='<span style="font-size:12px;color:#c62828;margin-left:6px">時間の記入なし</span>';
+    r+='</div>';
+    if(note)r+='<div class="mnote"'+(ans==='late'?' style="display:block"':'')+'>'+esc(note)+'</div>';
+    r+='</div>';
     return r;
   }
   var players=activeMembers('player');
@@ -620,8 +662,13 @@ function drawInput(){
     html+='<button class="abtn'+(a.ans==='ok'?' ok':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ok" data-t="ans">○</button>';
     html+='<button class="abtn'+(a.ans==='ng'?' ng':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="ng" data-t="ans">×</button>';
     html+='<button class="abtn'+(a.ans==='maybe'?' my':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="maybe" data-t="ans">△</button>';
+    html+='<button class="abtn late-lbl'+(a.ans==='late'?' lt':'')+'" data-eid="'+ev.id+'" data-mid="'+mid+'" data-v="late" data-t="ans">遅刻<br>早退</button>';
     html+='</div>';
-    html+='<textarea class="ntarea" rows="2" placeholder="備考（任意）" data-eid="'+ev.id+'" data-mid="'+mid+'">'+esc(a.note||'')+'</textarea></div>';
+    var needNote=(a.ans==='late');
+    html+='<textarea class="ntarea'+(needNote?' req':'')+'" rows="2" placeholder="'+(needNote?'何時ごろになるかを書いてください':'備考（任意）')+'" data-eid="'+ev.id+'" data-mid="'+mid+'">'+esc(a.note||'')+'</textarea>';
+    html+='<div class="reqmsg'+(needNote&&!(a.note||'').trim()?' bad':'')+'" data-reqfor="'+ev.id+'"'+(needNote?'':' hidden')+'>'
+         +(needNote&&!(a.note||'').trim()?'※ 遅刻・早退のときは、備考に時間を必ず書いてください':'例: 15分ほど遅れます / 15:00に早退します')+'</div>';
+    html+='</div>';
     if(isParent){
       html+='<div class="isec"><div class="ilbl">看護当番の可否</div>';
       html+='<div class="abtnrow">';
@@ -655,7 +702,16 @@ function drawInput(){
         var row=btn.parentElement;var siblings=row.querySelectorAll('.abtn');
         for(var j=0;j<siblings.length;j++){
           var v=siblings[j].getAttribute('data-v');
-          siblings[j].className='abtn'+(v===val?(val==='ok'?' ok':val==='ng'?' ng':' my'):'');
+          var cls=(v==='ok')?' ok':(v==='ng')?' ng':(v==='late')?' lt':' my';
+          siblings[j].className='abtn'+(v==='late'?' late-lbl':'')+(v===val?cls:'');
+        }
+        if(type==='ans'){
+          var sec=btn.closest('.isec');
+          var tx=sec?sec.querySelector('.ntarea'):null;
+          if(tx){
+            noteReq(tx,val==='late');
+            if(val==='late'&&!tx.value.trim()){tx.focus();}
+          }
         }
         showToast('保存しました');
       };
@@ -665,8 +721,37 @@ function drawInput(){
   var txts=body.querySelectorAll('.ntarea');
   for(var i=0;i<txts.length;i++){
     (function(tx){
-      tx.onchange=function(){getA(tx.getAttribute('data-eid'),tx.getAttribute('data-mid')).note=tx.value;save();};
+      var sync=function(){
+        getA(tx.getAttribute('data-eid'),tx.getAttribute('data-mid')).note=tx.value;save();
+        var a3=peekA(tx.getAttribute('data-eid'),tx.getAttribute('data-mid'));
+        noteReq(tx,a3.ans==='late');
+      };
+      tx.onchange=sync;
+      tx.oninput=function(){
+        var a3=peekA(tx.getAttribute('data-eid'),tx.getAttribute('data-mid'));
+        if(a3.ans==='late')noteReq(tx,true);
+      };
     })(txts[i]);
+  }
+}
+
+// 遅刻・早退を選んだときは備考（時間）を必須扱いにする
+function noteReq(tx,on){
+  var msg=tx.parentElement.querySelector('.reqmsg');
+  if(!msg)return;
+  if(!on){
+    tx.classList.remove('req');tx.placeholder='備考（任意）';
+    msg.hidden=true;msg.classList.remove('bad');
+    return;
+  }
+  tx.classList.add('req');tx.placeholder='何時ごろになるかを書いてください';
+  msg.hidden=false;
+  if(tx.value.trim()){
+    msg.classList.remove('bad');
+    msg.textContent='例: 15分ほど遅れます / 15:00に早退します';
+  }else{
+    msg.classList.add('bad');
+    msg.textContent='※ 遅刻・早退のときは、備考に時間を必ず書いてください';
   }
 }
 
