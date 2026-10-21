@@ -465,7 +465,7 @@ function drawLogin(){
     document.getElementById('hbtn').textContent='ログアウト';
     document.getElementById('hset').style.display='';
     document.getElementById('ti').style.display='';
-    if(found.role==='admin')document.getElementById('ta').style.display='';
+    document.getElementById('ta').style.display=(found.role==='admin')?'':'none';
     goCalendar();showToast('ようこそ、'+found.name+'さん');
   };
 }
@@ -528,16 +528,16 @@ function drawCal(){
       html+='<div class="etitle">'+typeBadge(ev.type)+esc(ev.title)+(ev.note?'<span style="font-size:11px;color:#888;margin-left:6px">'+esc(ev.note)+'</span>':'')+'</div>';
       html+='<div class="esum"><span style="color:#888;min-width:34px">選手</span>';
       if(tp.ok)html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span>';
-      if(tp.my)html+='<span style="color:#f57f17"><b>△</b>'+tp.my+'</span>';
       if(tp.lt)html+='<span style="color:#3949ab"><b>◐</b>'+tp.lt+'</span>';
       if(tp.ng)html+='<span style="color:#c62828"><b>×</b>'+tp.ng+'</span>';
+      if(tp.my)html+='<span style="color:#f57f17"><b>△</b>'+tp.my+'</span>';
       if(tp.no)html+='<span style="color:#bbb">未'+tp.no+'</span>';
       html+='</div>';
       html+='<div class="esum"><span style="color:#888;min-width:34px">コーチ</span>';
       if(tcz.ok)html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span>';
-      if(tcz.my)html+='<span style="color:#f57f17"><b>△</b>'+tcz.my+'</span>';
       if(tcz.lt)html+='<span style="color:#3949ab"><b>◐</b>'+tcz.lt+'</span>';
       if(tcz.ng)html+='<span style="color:#c62828"><b>×</b>'+tcz.ng+'</span>';
+      if(tcz.my)html+='<span style="color:#f57f17"><b>△</b>'+tcz.my+'</span>';
       if(tcz.no)html+='<span style="color:#bbb">未'+tcz.no+'</span>';
       html+='</div>';
       if(duties.length)html+='<div><span class="duty-bar">当番: '+esc(duties.join('・'))+'</span></div>';
@@ -619,9 +619,9 @@ function drawDetail(){
   if(duties.length)html+='<div class="dutybox"><div class="dutybox-t">看護当番</div><div class="dutybox-n">'+esc(duties.join('・'))+'</div></div>';
   var tp=tally(att),tcz=tallyCoach(att);
   html+='<div class="card" style="padding:10px 14px"><div class="esum" style="margin-bottom:2px"><span style="color:#888;min-width:34px">選手</span>';
-  html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span><span style="color:#f57f17"><b>△</b>'+tp.my+'</span>'+(tp.lt?'<span style="color:#3949ab"><b>◐</b>'+tp.lt+'</span>':'')+'<span style="color:#c62828"><b>×</b>'+tp.ng+'</span><span style="color:#bbb">未'+tp.no+'</span></div>';
+  html+='<span style="color:#2e7d32"><b>○</b>'+tp.ok+'</span>'+(tp.lt?'<span style="color:#3949ab"><b>◐</b>'+tp.lt+'</span>':'')+'<span style="color:#c62828"><b>×</b>'+tp.ng+'</span><span style="color:#f57f17"><b>△</b>'+tp.my+'</span><span style="color:#bbb">未'+tp.no+'</span></div>';
   html+='<div class="esum"><span style="color:#888;min-width:34px">コーチ</span>';
-  html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span><span style="color:#f57f17"><b>△</b>'+tcz.my+'</span>'+(tcz.lt?'<span style="color:#3949ab"><b>◐</b>'+tcz.lt+'</span>':'')+'<span style="color:#c62828"><b>×</b>'+tcz.ng+'</span><span style="color:#bbb">未'+tcz.no+'</span></div></div>';
+  html+='<span style="color:#2e7d32"><b>○</b>'+tcz.ok+'</span>'+(tcz.lt?'<span style="color:#3949ab"><b>◐</b>'+tcz.lt+'</span>':'')+'<span style="color:#c62828"><b>×</b>'+tcz.ng+'</span><span style="color:#f57f17"><b>△</b>'+tcz.my+'</span><span style="color:#bbb">未'+tcz.no+'</span></div></div>';
   function mkrow(m){
     var a=att[m.id]||{};var ans=a.ans||null;
     if(ans!=='ok'&&ans!=='maybe'&&ans!=='late')return '';
@@ -708,8 +708,8 @@ function drawInput(){
   if(!future.length)html+='<div class="noev" style="padding:1rem">今後の予定はありません</div>';
 
   if(inputMode==='simple'){
-    html+='<div class="legend"><span><b class="lg-ok">○</b>参加</span><span><b class="lg-ng">×</b>休み</span>'
-        + '<span><b class="lg-my">△</b>未定</span><span><b class="lg-lt">◐</b>遅刻早退</span></div>';
+    html+='<div class="legend"><span><b class="lg-ok">○</b>参加</span><span><b class="lg-lt">◐</b>遅刻早退</span>'
+        + '<span><b class="lg-ng">×</b>休み</span><span><b class="lg-my">△</b>未定</span></div>';
     for(var i=0;i<evs.length;i++){
       var ev=evs[i];var a=peekA(ev.id,mid);
       if(i===future.length)html+='<div class="slbl" style="margin-top:16px">過去の予定</div>';
@@ -724,7 +724,7 @@ function drawInput(){
       }
       html+='</div>';
       html+='<div class="isec cans"><span class="clbl">出欠</span><div class="abtnrow mini">';
-      html+=ansBtn(ev.id,mid,'ok',a.ans)+ansBtn(ev.id,mid,'ng',a.ans)+ansBtn(ev.id,mid,'maybe',a.ans)+ansBtn(ev.id,mid,'late',a.ans);
+      html+=ansBtn(ev.id,mid,'ok',a.ans)+ansBtn(ev.id,mid,'late',a.ans)+ansBtn(ev.id,mid,'ng',a.ans)+ansBtn(ev.id,mid,'maybe',a.ans);
       html+='</div>';
       var nn=(a.ans==='late');
       html+='<textarea class="ntarea mini'+(nn?' req':'')+'" rows="1" placeholder="何時ごろになるかを書いてください" data-eid="'+ev.id+'" data-mid="'+mid+'"'+(nn?'':' hidden')+'>'+esc(a.note||'')+'</textarea>';
@@ -749,7 +749,7 @@ function drawInput(){
     html+='<div class="imeta" style="margin-top:-6px;'+(over?'color:#EF6C00;font-weight:bold':'')+'">入力期限: '+fdsp(dlv)+(over?'（期限切れ）':'')+'</div>';
     html+='<div class="isec"><div class="ilbl">'+esc(member.name)+'の出欠</div>';
     html+='<div class="abtnrow">';
-    html+=ansBtn(ev.id,mid,'ok',a.ans)+ansBtn(ev.id,mid,'ng',a.ans)+ansBtn(ev.id,mid,'maybe',a.ans)+ansBtn(ev.id,mid,'late',a.ans);
+    html+=ansBtn(ev.id,mid,'ok',a.ans)+ansBtn(ev.id,mid,'late',a.ans)+ansBtn(ev.id,mid,'ng',a.ans)+ansBtn(ev.id,mid,'maybe',a.ans);
     html+='</div>';
     var needNote=(a.ans==='late');
     html+='<textarea class="ntarea'+(needNote?' req':'')+'" rows="2" placeholder="'+(needNote?'何時ごろになるかを書いてください':'備考（任意）')+'" data-eid="'+ev.id+'" data-mid="'+mid+'">'+esc(a.note||'')+'</textarea>';
